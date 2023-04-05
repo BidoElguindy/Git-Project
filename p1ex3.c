@@ -51,3 +51,16 @@ char* hashToPath(char* hash){
     strcat(res,hash+2);
     return res;
 }
+
+void blobFile ( char * file ) {
+    char * hash = sha256file ( file ) ;
+    char * ch2 = strdup ( hash ) ;
+    ch2 [2] = '/0' ;
+    if (! file_exists ( ch2 ) ){
+        char buff [100];
+        sprintf ( buff , "mkdir %s ", ch2 ) ;
+        system ( buff ) ;
+    }
+    char * ch = hashToPath ( hash ) ;
+    cp( ch , file ) ;
+}
