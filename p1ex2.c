@@ -8,6 +8,7 @@
 
 List *initList(){
     List *l = malloc(sizeof(List));
+    *
     
     return l;
 }
