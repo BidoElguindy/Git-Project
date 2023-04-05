@@ -1,0 +1,186 @@
+List* stol(char* s) {
+    List* head = NULL;
+    List* tail = NULL;
+    char* delimiter = strchr(s, '|');
+
+    while (delimiter != NULL) {
+        size_t len = delimiter - s;
+        char* token = (char*)malloc(len + 1);
+        if (!token) {
+            fprintf(stderr, "Error: failed to allocate memory for list node data.\n");
+            exit(EXIT_FAILURE);
+        }
+        memcpy(token, s, len);
+        token[len] = '\0';
+
+        List* node = (List*)malloc(sizeof(List));
+        if (!node) {
+            fprintf(stderr, "Error: failed to allocate memory for list node.\n");
+            exit(EXIT_FAILURE);
+        }
+        node->data = token;
+        node->next = NULL;
+
+        if (!head) {
+            head = node;
+            tail = node;
+        } else {
+            tail->next = node;
+            tail = node;
+        }
+
+        s = delimiter + 1;
+        delimiter = strchr(s, '|');
+    }
+
+    if (*s != '\0') {
+        List* node = (List*)malloc(sizeof(List));
+        if (!node) {
+            fprintf(stderr, "Error: failed to allocate memory for list node.\n");
+            exit(EXIT_FAILURE);
+        }
+        node->data = (char*)malloc(strlen(s) * sizeof(char) + 1);
+        if (!node->data) {
+            fprintf(stderr, "Error: failed to allocate memory for list node data.\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(node->data, s);
+        node->next = NULL;
+
+        if (!head) {
+            head = node;
+        } else {
+            tail->next = node;
+        }
+    }
+
+    return head;
+}
+
+
+MAIN FOR STOL  
+    
+    char* s = "hello|world|this|is|a|list|";
+    List* l = stol(s);
+
+    List* current = l;
+    while (current != NULL) {
+        printf("%s ", (*current)->data);
+        current = &((*current)->next);
+    }
+    printf("\n");
+
+    // free the list
+    while (l != NULL) {
+        List* tmp = l;
+        l = &((*l) ->next);
+        free((*tmp)->data);
+        free(tmp);
+    }
+
+Ex 2
+
+List* stol(char* s) {
+    List* head = NULL;
+    List* tail = NULL;
+    char* delimiter = strchr(s, '|');
+
+    while (delimiter != NULL) {
+        size_t len = delimiter - s;
+        char* token = (char*)malloc(len + 1);
+        memcpy(token, s, len);
+        token[len] = '\0';
+
+        List* node = (List*)malloc(sizeof(List));
+        (*node)->data = token;
+        (*node)->next = NULL;
+
+        if (!head) {
+            head = node;
+            tail = node;
+        } else {
+            (*tail)->next = *node;
+            tail = node;
+        }
+
+        s = delimiter + 1;
+        delimiter = strchr(s, '|');
+    }
+
+    if (*s != '\0') {
+        List* node = (List*)malloc(sizeof(List));
+        (*node)->data = (char*)malloc(strlen(s) * sizeof(char) + 1);
+        strcpy((*node)->data, s);
+        (*node)->next = NULL;
+
+        if (!head) {
+            head = node;
+        } else {
+            (*tail)->next = *node;
+        }
+    }
+
+    return head;
+}
+
+Ex2 
+
+List* ftol(char* path) {
+    FILE* file = fopen(path, "r");
+    if (file == NULL) {
+        printf("Error opening file for reading.\n");
+        return NULL;
+    }
+
+    List* L = NULL;
+    char line[1024];
+    while (fgets(line, sizeof(line), file)) {
+        int len = strlen(line);
+        if (len > 0 && line[len-1] == '\n') {
+            line[len-1] = '\0';
+        }
+
+        Cell* new_cell = malloc(sizeof(Cell));
+        new_cell->data = strdup(line);
+        new_cell->next = NULL;
+
+        if (L == NULL) {
+            L = &new_cell;
+        } else {
+            Cell* curr = *L;
+            while (curr->next != NULL) {
+                curr = curr->next;
+            }
+            curr->next = new_cell;
+        }
+    }
+
+    fclose(file);
+    return L;
+}
+
+Ex2
+char* ltos(List* L) {
+    int total_length = 0;
+    Cell* current_cell = *L;
+    char* output_str = NULL;
+    
+    // Tout d’abord, déterminer la longueur totale de la chaîne de sortie
+    while (current_cell != NULL) {
+        total_length += strlen(current_cell->data) + 1; // add 1 for the separator '|'
+        current_cell = current_cell->next;
+    }
+
+   // Allouer de la mémoire pour la chaîne de sortie
+    output_str = (char*) malloc(sizeof(char) * total_length);
+
+    // Itérez à nouveau dans la liste et concaténez chaque chaîne avec le séparateur '|'
+    current_cell = *L;
+    while (current_cell != NULL) {
+        strcat(output_str, current_cell->data);
+        strcat(output_str, "|");
+        current_cell = current_cell->next;
+    }
+
+    return output_str;
+}
