@@ -12,7 +12,7 @@ int hashFile(char* source, char* dest){
 	system(buffer);
 	return 1;
 }
-
+//inzoinivnczn
 char* sha256file(char* file){
 	static char template [] =" /tmp/myfileXXXXXX" ;
 	char fname[1000];
