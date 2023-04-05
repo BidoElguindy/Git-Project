@@ -64,3 +64,20 @@ void blobFile ( char * file ) {
     char * ch = hashToPath ( hash ) ;
     cp( ch , file ) ;
 }
+
+//Version chatgpt
+
+void blobFile(char* file) {
+    if (fileExists(file)) {
+        char hash[SHA256_DIGEST_LENGTH * 2 + 1];
+        sha256file(file, hash);
+        char* path = hashToPath(hash);
+        mkdir(path, 0777);
+        char destFile[strlen(path) + strlen(hash) + 2];
+        sprintf(destFile, "%s/%s", path, hash);
+        if (!fileExists(destFile)) {
+            cp(destFile, file);
+        }
+        free(path);
+    }
+}
