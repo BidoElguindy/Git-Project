@@ -185,7 +185,7 @@ char *blobCommit(Commit *c) {
     mkstemp(fname);
     ctf(c, fname);
     char *hash = sha256file(fname);
-    char *path = hashtoPath(hash);
+    char *path = hashToPath(hash);
     char *ret = strdup(hash); // Sauvegarde du hash pour rendu de fonction
 	hash[2] = '\0'; // 2 premiers cara du hash pour mkdir
 	char output[1000];
@@ -214,7 +214,7 @@ void freeCommit(Commit *c) {
 }
 
 
-
+/*
 int main() {
     // Test createKeyVal et freeKeyVal
     printf("Testing createKeyVal and freeKeyVal...\n");
@@ -281,3 +281,37 @@ int main() {
     return 0;
 }
 
+*/
+
+int main() {
+    // test createKeyVal and kvts
+    kvp* kv = createKeyVal("key1", "value1");
+    printf("Created keyval pair: %s\n", kvts(kv));
+
+    // test commitSet and commitGet
+    Commit* c = initCommit();
+    commitSet(c, "key1", "value1");
+    commitSet(c, "key2", "value2");
+    printf("Commit: %s\n", cts(c));
+    printf("Value of key1 in commit: %s\n", commitGet(c, "key1"));
+    printf("Value of key2 in commit: %s\n", commitGet(c, "key2"));
+
+    // test createCommit and blobCommit
+    Commit* c2 = createCommit("abc123");
+    commitSet(c2, "key3", "value3");
+    printf("Commit 2: %s\n", cts(c2));
+    printf("Blob of commit 2: %s\n", blobCommit(c2));
+
+    // test ctf and ftc
+    ctf(c, "testcommit.txt");
+    Commit* c3 = ftc("testcommit.txt");
+    printf("Commit 3 from file: %s\n", cts(c3));
+
+    // test freeKeyVal and freeCommit
+    freeKeyVal(kv);
+    freeCommit(c);
+    freeCommit(c2);
+    freeCommit(c3);
+
+    return 0;
+}
