@@ -1,5 +1,6 @@
 #include "Work.h"
 
+
 WorkFile* createWorkFile(char* name){
     WorkFile* wf = (WorkFile*) malloc(sizeof(WorkFile)); // Alloue de la mémoire pour la structure WorkFile
     wf->name = strdup(name); // Copie la chaîne de caractères passée en argument pour le nom du fichier
@@ -200,7 +201,7 @@ char* hashToFile(char* hash) {
     return hashToPath(hash);
 }
 
-void blobWorkTree(WorkTree* wt) {
+char * blobWorkTree(WorkTree* wt) {
     // Créer un nom de fichier temporaire unique dans le répertoire /tmp
     char fname[100] = "/tmp/myfileXXXXXX";
     int fd = mkstemp(fname);
@@ -218,74 +219,127 @@ void blobWorkTree(WorkTree* wt) {
     return hash;
 }
 
+// Concatène deux chemins (path1 et path2) pour créer un chemin absolu
+// Renvoie le chemin absolu résultant
 char *concat_paths(char *path1, char *path2) {
+    // Alloue de la mémoire pour le chemin absolu résultant
     char *result = malloc(strlen(path1) + strlen(path2) + 1);
+    // Vérifie si l'allocation de mémoire a échoué
     if (result == NULL) {
         printf("Error: unable to allocate memory\n");
         return NULL;
     }
-    strcpy(result, path1); // Copy path1 to result
-    strcat(result, "/"); // Append a slash to result
-    strcat(result, path2); // Append path2 to result
+    // Copie path1 dans result
+    strcpy(result, path1);
+    // Ajoute un slash à result
+    strcat(result, "/");
+    // Ajoute path2 à result
+    strcat(result, path2);
+    // Renvoie le chemin absolu résultant
     return result;
 }
 
+int isFile(const char *path) {
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+
+// Crée un enregistrement instantané de tout le contenu d'un WorkTree, puis de lui-même.
+// Renvoie le hash du fichier représentant l'état instantané du WorkTree.
 char *saveWorkTree(WorkTree *wt, char *path) {
+    // Parcourt le tableau de WorkFile de wt
     for (int i = 0; i < wt->n; i++) {
+        // Concatène le chemin absolu du WorkFile avec le chemin donné en paramètre pour obtenir un chemin absolu complet
         char *absPath = concat_paths(path, wt->tab[i].name);
+        // Vérifie si le WorkFile correspond à un fichier
         if (isFile(absPath) == 1) {
+            // Crée un enregistrement instantané du fichier
             blobFile(absPath);
+            // Récupère le hash du fichier
             wt->tab[i].hash = sha256file(absPath);
+            // Récupère le mode du fichier
             wt->tab[i].mode = getChmod(absPath);
-        } else {
+        } else { // Sinon, le WorkFile correspond à un répertoire
+            // Crée un nouveau WorkTree pour tout le contenu du répertoire
             WorkTree *wt2 = initWorkTree();
             List *L = listdir(absPath);
+            // Parcourt tous les éléments du répertoire et les ajoute au nouveau WorkTree
             for (Cell *ptr = *L; ptr != NULL; ptr = ptr->next) {
+                // Ignore les fichiers cachés
                 if (ptr->data[0] == '.') {
                     continue;
                 }
-                appendWorkTree(wt2, ptr->data, 0, NULL);
+                appendWorkTree(wt2, ptr->data,NULL,0);
             }
+            // Récupère le hash du WorkTree représentant le contenu du répertoire
             wt->tab[i].hash = saveWorkTree(wt2, absPath);
+            // Récupère le mode du répertoire
             wt->tab[i].mode = getChmod(absPath);
         }
     }
+    // Crée un enregistrement instantané de l'état actuel du WorkTree et retourne son hash
     return blobWorkTree(wt);
 }
 
-int isWorkTree(char *hash) {
+
+
+
+
+int isWorkTree(char* hash) {
+    // On vérifie si le hash correspond à un WorkTree en cherchant un fichier avec l'extension ".t"
     if (file_exists(strcat(hashToPath(hash), ".t"))) {
         return 1;
     }
+    // On vérifie si le hash correspond à un fichier en cherchant un fichier sans l'extension ".t"
     if (file_exists(hashToPath(hash))) {
         return 0;
     }
+    // Si le fichier n'existe pas, on retourne -1
     return -1;
 }
 
-void restoreWorkTree(WorkTree *wt, char *path) {
-    for (int i = 0; i < wt->n; i++) {
-        char *absPath = concat_paths(path, wt->tab[i].name);
-        char *copyPath = hashToPath(wt->tab[i].hash);
-        char *hash = wt->tab[i].hash;
 
-        if (isWorkTree(hash) == 0) { // si c’est un fichier
-            cp(absPath, copyPath);
+void restoreWorkTree(WorkTree* wt, char* path) {
+    // Parcourt tous les éléments du WorkTree
+    for (int i = 0; i < wt->n; i++) {
+        // Construit le chemin absolu du fichier ou dossier
+        char* absPath = concat_paths(path, wt->tab[i].name);
+        // Construit le chemin absolu de la sauvegarde correspondante
+        char* copyPath = hashToPath(wt->tab[i].hash);
+        // Récupère le hash du fichier ou dossier
+        char* hash = wt->tab[i].hash;
+
+        // Vérifie si l'élément est un fichier ou un dossier
+        if (isFile(hash) == 1) { // si c'est un fichier
+            // Copie la sauvegarde vers le chemin absolu du fichier
+            cp(copyPath, absPath);
+            // Définit les autorisations du fichier
+            setMode(getChmod(copyPath), absPath);
+        } else if (isWorkTree(hash) == 1) { // si c'est un dossier
+            // Ajoute l'extension ".t" pour construire le chemin absolu de la sauvegarde du dossier
+            strcat(copyPath, ".t");
+            // Crée un nouveau WorkTree à partir de la sauvegarde du dossier
+            WorkTree* nwt = ftwt(copyPath);
+            // Restaure le WorkTree à partir de la sauvegarde
+            restoreWorkTree(nwt, absPath);
+            // Définit les autorisations du dossier
             setMode(getChmod(copyPath), absPath);
         } else {
-            if (isWorkTree(hash) == 1) { // si c’est un répertoire
-                strcat(copyPath, ".t");
-                WorkTree *nwt = ftwt(copyPath);
-                restoreWorkTree(nwt, absPath);
-                setMode(getChmod(copyPath), absPath);
-            }
+            // Si l'élément n'est ni un fichier ni un dossier, affiche un message d'erreur
+            printf("Error: unknown file type\n");
         }
+        // Libère la mémoire allouée pour les chemins absolus
+        free(absPath);
+        free(copyPath);
     }
 }
 
 
 
 int main(){
+    
+    /*
     WorkFile* wf1= createWorkFile("Wf1");
     char * cwf1 = wfts(wf1);
     printf("%s ,",cwf1);
@@ -305,6 +359,6 @@ int main(){
     WorkTree* wt2= stwt(cwt1); 
     wttf(wt1,"etst.txt");
     WorkTree* wt3 = ftwt("etst.txt");
-
+*/
     return 1;
 }
