@@ -16,5 +16,15 @@ Work : Work.o List.o
 Commit : Commit.o Work.o List.o
 	$(CC) -o $@ $(CFLAGS) $^
 
+List.o : List.c 
+	$(CC) $(CFLAGS) -c $^
+
+Work.o : Work.c 
+	$(CC) $(CFLAGS) -c $^
+
+Commit.o : Commit.c 
+	$(CC) $(CFLAGS) -c $^
+	
 clean :
 	rm -f *.o *~ $(PROGRAMS)
+
