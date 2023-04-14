@@ -214,17 +214,24 @@ void freeCommit(Commit *c) {
 }
 
 WorkTree* btwt(const char* branch) {
+  // Récupération du hash du dernier commit de la branche
   char* hash_commit = getRef(branch);
   assert(hash_commit != NULL);
+
   WorkTree* wt;
   if(strlen(hash_commit) == 0) {
+    // Si la branche n'a aucun commit, on crée un WorkTree vide
     wt = initWorkTree();
   } else {
+    // Sinon, on récupère le dernier commit de la branche et on construit son WorkTree correspondant
     Commit* c = htc(hash_commit);
     wt = ctwt(c);
     freeCommit(c);
   }
+
+  // Libération de la mémoire allouée pour hash_commit
   free(hash_commit);
+
   return wt;
 }
 
