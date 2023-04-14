@@ -257,6 +257,14 @@ void afficherListe(List liste) {
     }
 }
 
+void freeList(List *l) {
+  if(l==NULL) return;
+  for(Cell *c=*l, *p; c; c=p) {
+    p=c->next;
+    freeCell(c);
+  }
+  free(l);
+}
 
 void ltof(List* L, char* path) {
     // Ouverture du fichier pour l'écriture
