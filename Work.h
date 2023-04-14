@@ -111,5 +111,10 @@ int isWorkTree(char* hash);
 les fichiere et dossiers correspondant aux chemins fournis en argument */
 void restoreWorkTree(WorkTree* wt, char* path);
 
+//EXERCICE 11
+
+/* Q.1 La fonction mergeWorkTrees prend en entrée deux worktrees (wt1 et wt2) et un pointeur vers une liste (conflicts) qui sera remplie avec les noms des fichiers/répertoires en conflit. Elle renvoie un nouveau worktree (wt) qui ne contient que les fichiers/répertoires qui ne sont pas en conflit entre les deux worktrees. */
+
+WorkTree* mergeWorkTrees(WorkTree* wt1, WorkTree* wt2, List** conflicts);
 
 #endif
