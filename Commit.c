@@ -1,317 +1,484 @@
-#include "commit.h"
 #include "Work.h"
 
+//EXERCICE 4
 
-//EXERCICE 6
-
-
-kvp* createKeyVal(char* key, char* val) {
-    kvp* k = malloc(sizeof(kvp)); // Allocation de la mémoire pour une nouvelle paire clé-valeur
-    k->key = strdup(key); // Copie de la clé dans la structure
-    k->value = strdup(val); // Copie de la valeur dans la structure
-    return k; // Retourne la nouvelle paire clé-valeur allouée
-}
-
-void freeKeyVal(kvp* kv) {
-    free(kv->key);
-    free(kv->value);
-    free(kv);
+WorkFile* createWorkFile(char* name){
+    WorkFile* wf = (WorkFile*) malloc(sizeof(WorkFile)); // Alloue de la mémoire pour la structure WorkFile
+    wf->name = strdup(name); // Copie la chaîne de caractères passée en argument pour le nom du fichier
+    wf->hash = NULL; // Initialise le hash à NULL
+    wf->mode = 0; // Initialise le mode à 0
+    return wf; // Retourne le pointeur sur la structure WorkFile nouvellement créée
 }
 
 
-char* kvts(kvp* k) {
-    // Allocation de la mémoire pour le buffer
-    char* buff = malloc(sizeof(char) * 100);
-    // Formatage du buffer en utilisant sprintf pour concaténer les clés et les valeurs de la paire clé-valeur
-    sprintf(buff, "%s:%s", k->key, k->value);
-    // Retourne le buffer nouvellement formaté
-    return buff;
-}
-
-kvp* stkv(char* str) {
-    // On utilise la fonction strtok pour extraire la clé et la valeur de la chaîne.
-    // On récupère la première sous-chaîne jusqu'au premier délimiteur ':'.
-    char* key = strtok(str, ":");
-    // On récupère la deuxième sous-chaîne à partir du délimiteur ':'.
-    char* value = strtok(NULL, ":");
-    // On crée la structure kvp à partir de la clé et de la valeur extraites.
-    return createKeyVal(key, value);
+char* wfts(WorkFile* wf){
+    char * ch = malloc (1000* sizeof(char)); // Allocation dynamique de mémoire pour la chaîne de caractères
+    sprintf (ch, "%s \t %s \t %d", wf->name, wf->hash, wf->mode) ; // Formatage de la chaîne de caractères
+    return ch ; // Retourne la chaîne de caractères formatée
 }
 
 
-Commit* initCommit() {
-    // Allocation de l'espace pour la structure de Commit
-    Commit* c = malloc(sizeof(Commit));
-    // Initialisation les champs de la structure Commit
-    c->n = 0;
-    c->size = COMMIT_SIZE;
-    // Allocation de l'espace pour le tableau de pointeurs de type kvp*
-    c->T = malloc(sizeof(kvp*) * COMMIT_SIZE);
-    // Initialisation de chaque pointeur du tableau à NULL
-    for (int i = 0; i < COMMIT_SIZE; i++) {
-        c->T[i] = NULL;
+WorkFile* stwf(char* ch) {
+    char name[100], hash[100];
+    int mode;
+    int num_fields = sscanf(ch, "%s %s %d", name, hash, &mode);  // Récupération des champs de la chaîne "ch" et stockage dans les variables "name", "hash" et "mode"
+    if (num_fields != 3) {  // Si le nombre de champs n'est pas égal à 3
+        return NULL;  // Retourne NULL
     }
-    return c; // Renvoie un pointeur vers la structure de Commit initialisée
+    WorkFile* wf = createWorkFile(name);  // Crée un nouveau WorkFile à partir du nom "name" et stocke l'adresse de ce WorkFile dans la variable "wf"
+    wf->hash = strdup(hash);  // Copie la chaîne "hash" dans l'attribut "hash" du WorkFile "wf"
+    wf->mode = mode;  // Stocke la valeur de "mode" dans l'attribut "mode" du WorkFile "wf"
+    return wf;  // Retourne l'adresse du WorkFile créé
 }
 
-unsigned long hashF(char * str){
-    unsigned long hash = 0;
-    int c;
-    while((c = *str++)!='\0'){
-        hash = c + (hash << 6) + (hash << 16) - hash;
-    }
-    return hash;
+
+WorkTree* initWorkTree() {
+    // Allocation dynamique d'un pointeur WorkTree
+    WorkTree* wt = malloc(sizeof(WorkTree));
+    // Allocation dynamique d'un tableau de pointeurs WorkFile
+    wt->tab = malloc(N_WF * sizeof(WorkFile*));
+    // Initialisation de la taille maximale de la WorkTree
+    wt->size = N_WF;
+    // Initialisation du nombre d'éléments dans la WorkTree à 0
+    wt->n = 0;
+    // Renvoie le pointeur WorkTree initialisé
+    return wt;
 }
 
-void commitSet(Commit* c, char* key, char* value) {
-    unsigned long index = hashF(key) % c->size; // Calcul de l'indice à partir de la clé
-    unsigned long i = index;
-    do {
-        if (c->T[i] == NULL || strcmp(c->T[i]->key, key) == 0) { // Si la case est vide ou contient la clé cherchée
-            c->T[i] = createKeyVal(key, value); // On insère la paire dans la case courante
-            c->n++;
-            return;
+
+int inWorkTree(WorkTree* wt, char* name) {
+    // Parcourir chaque élément du tableau de WorkFile dans le WorkTree
+    for (int i = 0; i < wt->n; i++) {
+        // Si le nom de l'élément actuel correspond au nom recherché,
+        // retourner l'indice correspondant dans le tableau
+        if (strcmp(wt->tab[i].name, name) == 0) {
+            return i;
         }
-        i = (i + 1) % c->size; // Prochaine case, avec wrapping
-    } while (i != index); // Tant qu'on n'a pas fait un tour complet
-    fprintf(stderr, "Error: table de hachage pleine, impossible d'insérer la paire (%s,%s)\n", key, value);
-}
-
-Commit* createCommit(char* hash) {
-    // Allocation de mémoire pour un nouveau Commit
-    Commit* c = initCommit();
-    // Vérification si l'allocation de mémoire a été effectuée correctement
-    if (c == NULL) {
-        fprintf(stderr, "Error: could not allocate memory for commit\n");
-        return NULL;
     }
-    // Création de la clé "tree" avec la valeur correspondant à l'arbre de travail
-    char* tree_val = kvts(stkv(strcat("tree:", hash)));
-    // Ajout de la clé "tree" avec sa valeur dans le Commit
-    commitSet(c, "tree", tree_val);
-    // Retour du Commit
-    return c;
+    // Si le nom n'a pas été trouvé, retourner -1
+    return -1;
 }
 
-char* commitGet(Commit* c, char* key) {
-    int index = hashF(key) % c->size;  // Calcul de l'indice initial
-    int i = 0;
-    while (c->T[index] != NULL && i < c->size) { // Tant que la case n'est pas vide et qu'on a pas parcouru toutes les cases
-        if (strcmp(c->T[index]->key, key) == 0) { // Si la clé est trouvée
-            return c->T[index]->value;  // On retourne la valeur correspondante
-        }
-        i++;
-        index = (index + 1) % c->size; // On avance à la case suivante avec le probing linéaire
+
+int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
+    int ind = inWorkTree(wt, name); // vérifier si le fichier ou répertoire existe déjà dans le WorkTree
+    if (ind >= 0) { // si le fichier ou répertoire existe déjà, retourner une erreur
+        printf("Nom : %s déjà dans WT \n", name);
+        return -4;
     }
-    return NULL;  // La clé n'a pas été trouvée
+    if (wt->size > wt->n) { // si le tableau n'est pas plein, ajouter le nouveau WorkFile
+        wt->tab[wt->n].mode = mode; // ajouter le mode au nouveau WorkFile
+        wt->tab[wt->n].name = strdup(name); // copier le nom du nouveau WorkFile dans l'ancien WorkFile
+        if (hash != NULL) { // si le hash est présent, copier la propriété hash du nouveau WorkFile dans l'ancien WorkFile
+            wt->tab[wt->n].hash = strdup(hash);
+        } 
+        else { // sinon, mettre la propriété hash à NULL
+            wt->tab[wt->n].hash = NULL;
+        }
+        wt->n++; // mettre à jour le nombre d'éléments dans le tableau
+        return 0; // retourner 0 pour indiquer que l'ajout s'est bien déroulé
+    }
+    return ind; // retourner l'indice du WorkFile existant pour indiquer que l'ajout a échoué
 }
 
 
-char* cts(Commit* c) {
-    char* str = malloc(sizeof(char) * 1000);
-    str[0] = '\0'; // Initialisation de la chaîne de caractères vide
-    for (int i = 0; i < c->size; i++) {
-        if (c->T[i] != NULL) {
-            char* kv_str = kvts(c->T[i]); // Conversion du couple clé-valeur en une chaîne de caractères
-            strcat(str, kv_str); // Ajout de la chaîne de caractères représentant le couple clé-valeur à la chaîne résultante
-            strcat(str, "\n"); // Ajout d'un saut de ligne entre les couples
-            free(kv_str); // Libération de la mémoire allouée pour la chaîne de caractères représentant le couple clé-valeur
-        }
+char* wtts(WorkTree* wt) {
+    char* str = (char*)malloc(sizeof(char) * 1024); // allouer une mémoire suffisamment grande pour stocker la chaîne de caractères
+    str[0] = '\0'; // initialiser la chaîne de caractères à la chaîne vide
+    for (int i = 0; i < wt->n; i++) {
+        char* wf_str = wfts(&wt->tab[i]); // convertir chaque WorkFile en chaîne de caractères en utilisant la fonction wfts
+        strcat(str, wf_str); // ajouter la chaîne de caractères au résultat final
+        strcat(str, "\n"); // ajouter un saut de ligne
+        free(wf_str); // libérer la mémoire allouée pour la chaîne de caractères
     }
     return str;
 }
 
-Commit* stc(char* ch) {
-    Commit* c = initCommit(); // Initialisation d'un nouveau Commit vide
-    char* tok = strtok(ch, "\n"); // Découpage de la chaîne de caractères en sous-chaînes représentant chaque couple (clé, valeur)
-    while (tok != NULL) {
-        kvp* kv = stkv(tok); // Conversion de la sous-chaîne représentant un couple (clé, valeur) en une structure kvp
-        commitSet(c, kv->key, kv->value); // Ajout du couple (clé, valeur) au Commit
-        free(kv->key); // Libération de la mémoire allouée pour la clé
-        free(kv->value); // Libération de la mémoire allouée pour la valeur
-        free(kv); // Libération de la mémoire allouée pour la structure kvp
-        tok = strtok(NULL, "\n"); // Passage à la sous-chaîne suivante
+
+WorkTree* stwt(char* str) {
+    WorkTree* wt = (WorkTree*)malloc(sizeof(WorkTree)); // allouer une mémoire pour la structure WorkTree
+    wt->size = N_WF; // initialiser la taille par défaut du tableau à N_WF
+    wt->n = 0; // initialiser le nombre d'éléments dans le tableau à 0
+    wt->tab = (WorkFile*)malloc(sizeof(WorkFile) * wt->size); // allouer une mémoire pour le tableau de WorkFile
+    char* pch = strtok(str, "\n"); // séparer la chaîne de caractères en lignes en utilisant le caractère '\n'
+    while (pch != NULL) {
+        WorkFile* wf = stwf(pch); // convertir la ligne en WorkFile en utilisant la fonction stwf
+        int pos = inWorkTree(wt, wf->name); // vérifier si le fichier ou répertoire existe déjà dans le WorkTree
+        if (pos != -1) { // si le fichier ou répertoire existe déjà, mettre à jour ses propriétés
+            free(wt->tab[pos].hash); // libérer la mémoire allouée pour la propriété hash de l'ancien WorkFile
+            wt->tab[pos].hash = strdup(wf->hash); // copier la propriété hash du nouveau WorkFile dans l'ancien WorkFile
+            wt->tab[pos].mode = wf->mode; // mettre à jour la propriété mode de l'ancien WorkFile
+            free(wf); // libérer la mémoire allouée pour le nouveau WorkFile
+        } else { // sinon, ajouter le nouveau WorkFile au tableau
+            if (wt->n == wt->size) { // si le tableau est plein, agrandir sa taille
+                wt->size *= 2;
+                wt->tab = (WorkFile*)realloc(wt->tab, sizeof(WorkFile) * wt->size);
+            }
+            wt->tab[wt->n] = *wf; // ajouter le nouveau WorkFile à la fin du tableau
+            wt->n++; // mettre à jour le nombre d'éléments dans le tableau
+        }
+        pch = strtok(NULL, "\n"); // passer à la ligne suivante
     }
-    return c;
+    return wt;
 }
 
 
-void ctf(Commit* c, char* file) {
-    // Ouverture du fichier en mode écriture
-    FILE *fp = fopen(file, "w");
-
-    // Vérification que l'ouverture du fichier s'est bien passée
+int wttf(WorkTree* wt, char* file) {
+    
+    // ouverture du fichier en mode écriture
+    FILE* fp = fopen(file, "w");
+    
+    // gestion d'erreur en cas de fichier non ouvert
     if (fp == NULL) {
-        printf("Erreur lors de l'ouverture du fichier\n");
-        return;
+        fprintf(stderr, "Erreur : impossible d'ouvrir le fichier %s\n", file);
+        return -1;
     }
 
-    // Conversion du commit en chaîne de caractères
-    char* commit_str = cts(c);
+    // obtention de la chaîne de caractères représentant le WorkTree
+    char* str = wtts(wt);
 
-    // Écriture de la chaîne de caractères dans le fichier
-    fputs(commit_str, fp);
-
-    // Fermeture du fichier
+    // écriture de la chaîne de caractères dans le fichier
+    fputs(str, fp);
+    
+    // fermeture du fichier et libération de la mémoire allouée
     fclose(fp);
+    free(str);
+
+    return 0;
 }
 
-Commit* ftc(char* file) {
-    // Ouverture du fichier en mode lecture
-    FILE *fp = fopen(file, "r");
 
-    // Vérification que l'ouverture du fichier s'est bien passée
+WorkTree* ftwt(char* file) {
+    // Ouvrir le fichier en mode lecture
+    FILE* fp = fopen(file, "r");
     if (fp == NULL) {
-        printf("Erreur lors de l'ouverture du fichier\n");
+        // En cas d'erreur lors de l'ouverture du fichier
+        fprintf(stderr, "Erreur: impossible d'ouvrir le fichier %s\n", file);
         return NULL;
     }
+    // Initialiser les variables pour la lecture de la chaîne de caractères représentant le WorkTree
+    char* str = NULL;
+    size_t size = 0;
+    ssize_t bytes_read = 0;
+    // Lire le fichier et stocker la chaîne de caractères dans 'str'
+    while ((bytes_read = getline(&str, &size, fp)) != -1) {}
 
-    // Lecture de la chaîne de caractères du fichier
-    char buffer[10000];
-    fgets(buffer, 10000, fp);
-
-    // Fermeture du fichier
+    // Fermer le fichier
     fclose(fp);
 
-    // Conversion de la chaîne de caractères en commit
-    Commit* c = stc(buffer);
+    // Construire le WorkTree à partir de la chaîne de caractères 'str'
+    WorkTree* wt = stwt(str);
 
-    return c;
+    // Libérer la mémoire allouée pour la chaîne de caractères 'str'
+    free(str);
+    return wt;
 }
 
 
-char *blobCommit(Commit *c) {
+//EXERCICE 5
+
+int getChmod(const char* path) {
+    struct stat ret;
+
+    if (stat(path, &ret) == -1) {
+        return -1;
+    }
+
+    return (ret.st_mode & S_IRUSR) | (ret.st_mode & S_IWUSR) | (ret.st_mode & S_IXUSR) | 
+           (ret.st_mode & S_IRGRP) | (ret.st_mode & S_IWGRP) | (ret.st_mode & S_IXGRP) |
+           (ret.st_mode & S_IROTH) | (ret.st_mode & S_IWOTH) | (ret.st_mode & S_IXOTH); 
+}
+
+void setMode (int mode , char * path ) {
+    char buff [100];
+    sprintf ( buff , "chmod %d %s ", mode , path ) ;
+    system ( buff ) ;
+}
+
+char* hashToFile(char* hash) {
+    // Créer une copie de la chaîne de caractères hash
+    char* ch2 = strdup(hash);
+    // Mettre le caractère null ('\0') à l'indice 2 pour avoir un chemin
+    // de la forme XX/XXXX.../hash
+    ch2[2] = '\0';
+    // Vérifier si le répertoire hash existe, sinon le créer
+    struct stat st;
+    if (stat(ch2, &st) == -1) {
+        mkdir(ch2, 0700);
+    }
+    // Retourner le chemin complet du répertoire hash
+    return hashToPath(hash);
+}
+
+char * blobWorkTree(WorkTree* wt) {
+    // Créer un nom de fichier temporaire unique dans le répertoire /tmp
     char fname[100] = "/tmp/myfileXXXXXX";
-    mkstemp(fname);
-    ctf(c, fname);
-    char *hash = sha256file(fname);
-    char *path = hashToPath(hash);
-    char *ret = strdup(hash); // Sauvegarde du hash pour rendu de fonction
-	hash[2] = '\0'; // 2 premiers cara du hash pour mkdir
-	char output[1000];
-	if (!file_exists(hash)) {
-        sprintf(output,"mkdir %s",hash);
-	    system(output);
-    }
-    free(hash);
-	sprintf(output,"touch %s.c",path);
-	system(output);
-	sprintf(output,"%s.c",path);
-	cp(output,fname); // Copie du contenu de wt vers le fichier .t
-    printf("commit sauvegarde dans %s\n",path);
-	free(path);
-    return ret;
+    int fd = mkstemp(fname);
+    // Écrire le contenu du WorkTree dans le fichier temporaire
+    wttf(wt, fname);
+    // Calculer le hash du fichier temporaire
+    char* hash = sha256file(fname);
+    // Créer le chemin complet du fichier temporaire représentant le WorkTree
+    char* ch = hashToFile(hash);
+    strcat(ch, ".t");
+    // Copier le fichier temporaire vers le fichier représentant l'état instantané
+    // du WorkTree (avec l'extension ".t")
+    cp(ch, fname);
+    // Retourner le hash du fichier temporaire
+    return hash;
 }
 
-void freeCommit(Commit *c) {
-    if (c!=NULL) {
-        for (int i=0;i<c->n;i++) {
-            freeKeyVal(c->T[i]);
-        }
-        free(c->T);
+
+char *concat_paths(char *path1, char *path2) {
+    // Alloue de la mémoire pour le chemin absolu résultant
+    char *result = malloc(strlen(path1) + strlen(path2) + 1);
+    // Vérifie si l'allocation de mémoire a échoué
+    if (result == NULL) {
+        printf("Error: unable to allocate memory\n");
+        return NULL;
     }
-    free(c);
+    // Copie path1 dans result
+    strcpy(result, path1);
+    // Ajoute un slash à result
+    strcat(result, "/");
+    // Ajoute path2 à result
+    strcat(result, path2);
+    // Renvoie le chemin absolu résultant
+    return result;
+}
+
+int isFile(const char *path) {
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+
+char* saveWorkTree(WorkTree* wt, char* path) {
+    // Affichage du chemin du WorkTree en cours de sauvegarde
+    printf("saveworktree path : %s\n",path);
+    
+    // Pour chaque élément du WorkTree
+    for (int i=0;i<wt->n;i++) {
+        // Concaténation du chemin absolu du WorkTree avec le nom de l'élément
+        char *absPath = concat_paths(path,wt->tab[i].name);
+        
+        // Affichage de l'élément en cours de sauvegarde
+        printf("sauvegarde de %s\n",absPath);
+        
+        // Si l'élément est un fichier
+        if (isFile(absPath) == 1) {
+            printf("regular file\n");
+            
+            // Création d'un blob représentant le contenu du fichier
+            blobFile(absPath);
+            
+            // Calcul du hash SHA256 du fichier
+            wt->tab[i].hash = sha256file(absPath);
+            
+            // Récupération des permissions (chmod) du fichier
+            wt->tab[i].mode = getChmod(absPath);
+        }
+        // Si l'élément est un répertoire
+        else {
+            printf("dir\n");
+            
+            // Initialisation d'un nouveau WorkTree pour le sous-répertoire
+            WorkTree *wt2 = initWorkTree();
+            
+            // Liste des éléments du sous-répertoire
+            List *L = listdir(absPath);
+            
+            for(Cell* ptr = *L; ptr != NULL; ptr = ptr->next) {
+                // Si l'élément ne commence pas par un point (fichier caché)
+                if (ptr->data[0] != '.') {
+                    // Ajout de l'élément au WorkTree
+                    appendWorkTree(wt2,ptr->data,NULL,0);
+                }
+            }
+            // Libération de la mémoire allouée pour la liste
+            freeList(L);
+                
+            // Sauvegarde du sous-répertoire et récupération de son hash
+            wt->tab[i].hash = saveWorkTree(wt2,absPath);
+                
+            // Récupération des permissions (chmod) du répertoire
+            wt->tab[i].mode = getChmod(absPath);
+            // Libération de la mémoire allouée pour le sous-WorkTree
+            freeWorkTree(wt2);
+        }
+        // Libération de la mémoire allouée pour le chemin absolu
+        free(absPath);
+    }
+    // Affichage d'une information de sortie de la fonction
+    printf("exit saveworktree path : %s\n",path);
+    
+    // Création d'un blob représentant l'état instantané du WorkTree
+    return blobWorkTree(wt);
+}
+
+
+void freeWorkTree(WorkTree *wt) {
+	for (int i=0;i<wt->n;i++) {
+		freeWorkFile(&wt->tab[i]);
+	}
+	free(wt->tab);
+	free(wt);
+}
+
+void freeWorkFile(WorkFile *wf) {
+	free(wf->name);
+	free(wf->hash);
+	free(wf);
+}
+
+
+int isWorkTree(char* hash) {
+    // On vérifie si le hash correspond à un WorkTree en cherchant un fichier avec l'extension ".t"
+    if (file_exists(strcat(hashToPath(hash), ".t"))) {
+        return 1;
+    }
+    // On vérifie si le hash correspond à un fichier en cherchant un fichier sans l'extension ".t"
+    if (file_exists(hashToPath(hash))) {
+        return 0;
+    }
+    // Si le fichier n'existe pas, on retourne -1
+    return -1;
+}
+
+
+void restoreWorkTree(WorkTree* wt, char* path) {
+    // Parcourt tous les éléments du WorkTree
+    for (int i = 0; i < wt->n; i++) {
+        // Construit le chemin absolu du fichier ou dossier
+        char* absPath = concat_paths(path, wt->tab[i].name);
+        // Construit le chemin absolu de la sauvegarde correspondante
+        char* copyPath = hashToPath(wt->tab[i].hash);
+        // Récupère le hash du fichier ou dossier
+        char* hash = wt->tab[i].hash;
+
+        // Vérifie si l'élément est un fichier ou un dossier
+        if (isFile(hash) == 1) { // si c'est un fichier
+            // Copie la sauvegarde vers le chemin absolu du fichier
+            cp(copyPath, absPath);
+            // Définit les autorisations du fichier
+            setMode(getChmod(copyPath), absPath);
+        } else if (isWorkTree(hash) == 1) { // si c'est un dossier
+            // Ajoute l'extension ".t" pour construire le chemin absolu de la sauvegarde du dossier
+            strcat(copyPath, ".t");
+            // Crée un nouveau WorkTree à partir de la sauvegarde du dossier
+            WorkTree* nwt = ftwt(copyPath);
+            // Restaure le WorkTree à partir de la sauvegarde
+            restoreWorkTree(nwt, absPath);
+            // Définit les autorisations du dossier
+            setMode(getChmod(copyPath), absPath);
+        } else {
+            // Si l'élément n'est ni un fichier ni un dossier, affiche un message d'erreur
+            printf("Error: unknown file type\n");
+        }
+        // Libère la mémoire allouée pour les chemins absolus
+        free(absPath);
+        free(copyPath);
+    }
 }
 
 
 /*
-int main() {
-    // Test createKeyVal et freeKeyVal
-    printf("Testing createKeyVal and freeKeyVal...\n");
-    kvp* kv = createKeyVal("key", "value");
-    printf("Key: %s, Value: %s\n", kv->key, kv->value);
-    free(kv);
+int main(){
+    
+    //EXERCICE 4 
 
-    // Test kvts et stkv
-    printf("Testing kvts and stkv...\n");
-    char* kv_string = "key=value\n";
-    kvp* kv2 = stkv(kv_string);
-    printf("Key: %s, Value: %s\n", kv2->key, kv2->value);
-    char* kv_string2 = kvts(kv2);
-    printf("String: %s\n", kv_string2);
-    free(kv2);
-    free(kv_string2);
+    WorkFile* wf1 = createWorkFile("file1");
+    WorkFile* wf2 = createWorkFile("file2");
 
-    // Test initCommit et commitSet
-    printf("Testing initCommit and commitSet...\n");
-    Commit* c = initCommit(10);
-    commitSet(c, "key1", "value1");
-    commitSet(c, "key2", "value2");
-    printf("Value for key1: %s\n", commitGet(c, "key1"));
-    printf("Value for key2: %s\n", commitGet(c, "key2"));
+    char* wfts1 = wfts(wf1);
+    printf("WorkFile 1 : %s\n", wfts1);
+    char* wfts2 = wfts(wf2);
+    printf("WorkFile 2 : %s\n", wfts2);
 
-    // Test createCommit
-    printf("Testing createCommit...\n");
-    Commit* c2 = createCommit("hash123");
-    commitSet(c2, "key3", "value3");
-    char* commit_string = cts(c2);
-    printf("Commit string: %s\n", commit_string);
-    free(commit_string);
+    WorkFile* wf3 = stwf("file3 123456 777");
+    if (wf3 != NULL) {
+        char* wfts3 = wfts(wf3);
+        printf("WorkFile 3 : %s\n", wfts3);
+    }
 
-    // Test commitGet
-    printf("Testing commitGet...\n");
-    char* value = commitGet(c2, "key3");
-    printf("Value for key3: %s\n", value);
-    free(value);
+    WorkTree* wt = initWorkTree();
+    int ret = appendWorkTree(wt, "file1", NULL, 1);
+    if (ret == 0) {
+        printf("WorkFile 1 ajouté dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de l'ajout de WorkFile 1 dans WorkTree\n");
+    }
 
-    // Test stc
-    printf("Testing stc...\n");
-    Commit* c3 = stc(commit_string);
-    printf("Value for key3: %s\n", commitGet(c3, "key3"));
-    free(commit_string);
+    ret = appendWorkTree(wt, "file2", "123456", 2);
+    if (ret == 0) {
+        printf("WorkFile 2 ajouté dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de l'ajout de WorkFile 2 dans WorkTree\n");
+    }
 
-    // Test ctf et ftc
-    printf("Testing ctf and ftc...\n");
-    ctf(c2, "test_commit.txt");
-    Commit* c4 = ftc("test_commit.txt");
-    printf("Value for key3: %s\n", commitGet(c4, "key3"));
+    ret = appendWorkTree(wt, "file1", "456789", 3);
+    if (ret == 0) {
+        printf("WorkFile 1 mis à jour dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de la mise à jour de WorkFile 1 dans WorkTree\n");
+    }
 
-    // Test blobCommit
-    printf("Testing blobCommit...\n");
-    char* hash = blobCommit(c2);
-    printf("Blob hash: %s\n", hash);
-    free(hash);
+    int index = inWorkTree(wt, "file2");
+    if (index != -1) {
+        printf("WorkFile 2 trouvé dans WorkTree à l'indice %d\n", index);
+    }
+    else {
+        printf("WorkFile 2 non trouvé dans WorkTree\n");
+    }
 
-    // Libération de la mémoire
-    freeCommit(c);
-    freeCommit(c2);
-    freeCommit(c3);
-    freeCommit(c4);
+    char* wtts1 = wtts(wt);
+    printf("WorkTree : %s\n", wtts1);
 
-    return 0;
+    free(wf1);
+    free(wf2);
+    free(wf3);
+    free(wfts1);
+    free(wfts2);
+    free(wtts1);
+    free(wt->tab);
+    free(wt);
+
+    //EXERCICE 5
+
+    // Test de la fonction getChmod
+    printf("getChmod: %d\n", getChmod("testfile.txt"));
+
+    // Test de la fonction setMode
+    setMode(0644, "testfile.txt");
+
+    // Test de la fonction hashToFile
+    char* path = hashToFile("abcd1234");
+    printf("hashToFile: %s\n", path);
+
+    // Test de la fonction blobWorkTree
+    WorkTree* wt = initWorkTree();
+    appendWorkTree(wt, "testdir", NULL, 0);
+    char* hash = blobWorkTree(wt);
+    printf("blobWorkTree: %s\n", hash);
+
+    // Test de la fonction concat_paths
+    char* result = concat_paths("/path/to/dir", "filename.txt");
+    printf("concat_paths: %s\n", result);
+    free(result);
+
+    // Test de la fonction isFile
+    printf("isFile: %d\n", isFile("testfile.txt"));
+
+    // Test de la fonction saveWorkTree
+    WorkTree* wt2 = initWorkTree();
+    appendWorkTree(wt2, "testdir", NULL, 0);
+    char* hash2 = saveWorkTree(wt2, ".");
+    printf("saveWorkTree: %s\n", hash2);
+
+    return 1;
 }
 
 */
-
-int main() {
-    // test createKeyVal and kvts
-    kvp* kv = createKeyVal("key1", "value1");
-    printf("Created keyval pair: %s\n", kvts(kv));
-
-    // test commitSet and commitGet
-    Commit* c = initCommit();
-    commitSet(c, "key1", "value1");
-    commitSet(c, "key2", "value2");
-    printf("Commit: %s\n", cts(c));
-    printf("Value of key1 in commit: %s\n", commitGet(c, "key1"));
-    printf("Value of key2 in commit: %s\n", commitGet(c, "key2"));
-
-    // test createCommit and blobCommit
-    Commit* c2 = createCommit("abc123");
-    commitSet(c2, "key3", "value3");
-    printf("Commit 2: %s\n", cts(c2));
-    printf("Blob of commit 2: %s\n", blobCommit(c2));
-
-    // test ctf and ftc
-    ctf(c, "testcommit.txt");
-    Commit* c3 = ftc("testcommit.txt");
-    printf("Commit 3 from file: %s\n", cts(c3));
-
-    // test freeKeyVal and freeCommit
-    freeKeyVal(kv);
-    freeCommit(c);
-    freeCommit(c2);
-    freeCommit(c3);
-
-    return 0;
-}
