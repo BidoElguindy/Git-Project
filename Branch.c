@@ -1,4 +1,4 @@
-
+#include "Branch.h"
 
 void initBranch() {
     FILE *f = fopen(".currentbranch", "w");
@@ -133,4 +133,136 @@ List* getAllCommits() {
     }
     /* Retour de la liste L contenant tous les commits sans répétition */
     return L;
+}
+
+
+void restoreCommit(char* hash_commit) {
+    // On récupère le chemin du commit à partir de son hash
+    char* commit_path = hashToPathCommit(hash_commit);
+
+    // On crée un objet commit à partir du chemin récupéré
+    Commit* c = ftc(commit_path);
+
+    // On récupère le hash de l'arbre associé au commit et on le convertit en chemin
+    char* tree_hash = strcat(hashToPath(commitGet(c, "tree")), ".t");
+
+    // On crée un objet worktree à partir du chemin de l'arbre
+    WorkTree* wt = ftwt(tree_hash);
+
+    // On restaure le worktree associé au commit
+    restoreWorkTree(wt, ".");
+}
+
+void myGitCheckoutBranch(char* branch) {
+    // On construit la commande Git pour changer de branche
+    char* command = malloc(strlen("git checkout ") + strlen(branch) + 1);
+    strcpy(command, "git checkout ");
+    strcat(command, branch);
+
+    // On exécute la commande
+    system(command);
+
+    // On libère la mémoire allouée pour la commande
+    free(command);
+}
+
+List* filterList(List* L, char* pattern) {
+    // On crée une nouvelle liste pour stocker les éléments filtrés
+    List* filteredList = initList();
+
+    // On parcourt chaque élément de la liste initiale
+    for (Cell* current = *L; current != NULL; current = current->next) {
+        // On vérifie si l'élément commence par le pattern donné
+        if (strncmp(current->data, pattern, strlen(pattern)) == 0) {
+            // Si c'est le cas, on ajoute l'élément à la liste filtrée
+            insertFirst(&filteredList, buildCell(current->data));
+        }
+    }
+
+    // On retourne la liste filtrée
+    return filteredList;
+}
+
+/* Fonction qui retourne l'élément à l'indice i dans la liste */
+char* getElement(List* L, int i) {
+    int j = 0;
+    Cell* ptr = *L;
+
+    while (ptr != NULL && j < i) {
+        ptr = ptr->next;
+        j++;
+    }
+
+    if (ptr != NULL) {
+        return ptr->data;
+    } else {
+        return NULL;
+    }
+}
+
+/* Fonction qui affiche tous les éléments de la liste */
+void printList(List* L) {
+    Cell* ptr = *L;
+
+    while (ptr != NULL) {
+        printf("%s\n", ptr->data);
+        ptr = ptr->next;
+    }
+}
+
+/* Fonction qui retourne la longueur de la liste */
+int length(List* L) {
+    int count = 0;
+    Cell* ptr = *L;
+
+    while (ptr != NULL) {
+        count++;
+        ptr = ptr->next;
+    }
+
+    return count;
+}
+
+/* Fonction qui libère toute la mémoire allouée pour la liste */
+void freeList(List* L) {
+    Cell* ptr = *L;
+    Cell* temp;
+
+    while (ptr != NULL) {
+        temp = ptr->next;
+        free(ptr->data);
+        free(ptr);
+        ptr = temp;
+    }
+
+    *L = NULL;
+}
+
+void myGitCheckoutCommit(char* pattern) {
+    // Récupération de la liste de tous les commits
+    List* allCommits = getAllCommits();
+
+    // Filtrage des commits qui commencent par le pattern
+    List* filteredCommits = filterList(allCommits, pattern);
+
+    // S'il ne reste plus qu'un commit après le filtre, on met à jour la référence HEAD et on restaure le worktree correspondant
+    if (length(filteredCommits) == 1) {
+        char* hash_commit = getElement(filteredCommits, 0);
+        createUpdateRef("HEAD", hash_commit);
+        restoreCommit(hash_commit);
+    }
+    // S'il ne reste plus aucun commit après le filtre, on affiche un message d'erreur
+    else if (length(filteredCommits) == 0) {
+        printf("No matching commit found.\n");
+    }
+    // S'il reste plusieurs commits après le filtre, on les affiche tous et on demande à l'utilisateur de préciser sa requête
+    else {
+        printf("Multiple matching commits found:\n");
+        printList(filteredCommits);
+        printf("Please specify your request with a full commit hash or additional filtering.\n");
+    }
+
+    // Libération de la mémoire allouée pour les listes
+    freeList(allCommits);
+    freeList(filteredCommits);
 }
