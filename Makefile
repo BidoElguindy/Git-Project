@@ -1,28 +1,21 @@
-CFLAGS = -g -Wall -Wextra -pedantic -Wno-unused-parameter
 CFLAGS = -g 
 CC = gcc
 
-PROGRAMS = List Work Commit
+all : maintemp
 
-all : $(PROGRAMS)
-
-List : List.o
-	$(CC) -o $@ $(CFLAGS) $^
-
-Work : Work.o List.o
-	$(CC) -o $@ $(CFLAGS) $^
-
-Commit : Commit.o Work.o List.o
-	$(CC) -o $@ $(CFLAGS) $^
-
-List.o : List.c List.h
+List.o : List.c List.h 
 	$(CC) $(CFLAGS) -c $^
 
-Work.o : Work.c Work.h
+Work.o : Work.c List.c Work.h List.h
 	$(CC) $(CFLAGS) -c $^
 
-Commit.o : Commit.c Commit.h
+Commit.o : Commit.c Work.c List.c Commit.h Work.h List.h
 	$(CC) $(CFLAGS) -c $^
+
+maintemp : List.o Work.o Commit.o
+	$(CC) $(CFLAGS) -o $@ maintemp.c $^
 
 clean :
-	rm -f *.o *~ $(PROGRAMS)
+	rm -f *.o 
+
+
