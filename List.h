@@ -1,94 +1,119 @@
-#ifndef p1ex1_h
-#define p1ex1_h
+#ifndef WORK_h
+#define WORK_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <assert.h>
-#include <dirent.h>
-#include <sys/stat.h> 
+#include "List.h"
+
+#define N_WF 20
 
 
-typedef struct cell{
-    char* data;
-    struct cell *next;
+typedef struct {
+    char * name;
+    char * hash;
+    int mode;
+} WorkFile;
 
-} Cell;
-typedef Cell* List;
+typedef struct {
+    WorkFile * tab;
+    int size;
+    int n;
+} WorkTree;
 
-//EXERCICE 1 
+//EXERCICE 4 
 
-/* Q.2 : La fonction hashFile calcule le hash du contenu du premier 
-fichier (source) et l'ecrit dans le deuxième fichier (dest) */
-int hashFile(char* source, char* dest);
+// Q.1 La fonction createWorkFile permet de créer un WorkFile et de l’initialiser
+WorkFile* createWorkFile(char* name);
 
-/* Q.3 : La fonction sha256file renvoie une chaine de caracteres 
-contenant le hash du fichier donne en parametre (file) */
-char* sha256file(char* file);
+/* Q.2 La fonction wfts permet de convertir un WorkFile en chaine de caractères 
+contenant les différents champs séparés par des tabulations (caractère ’\t’) */
+char* wfts(WorkFile* wf);
 
-//EXERCICE 2
+/* Q.3 La fonction stwf permet de convertir une chaine de caractères 
+représentant un WorkFile en un WorkFile */
+WorkFile* stwf(char* ch);
 
-// Q.1 : La fonction initList initialise une liste vide
-List *initList();
+/* Q.4 La fonction initWorkTree permet d’allouer un WorkTree de taille fixée 
+(donnée par une constante du programme) et de l’initialiser */
+WorkTree* initWorkTree();
 
-/* Q.2 : La fonction buildCell alloue et retourne une cellule de 
-la liste */ 
-Cell * buildCell(char *ch);
+/* Q.5 La fonction inWorkTree vérifie la présence d’un fichier ou 
+répertoire dans un WorkTree. Elle doit retourner la position du 
+fichier dans le tableau s’il est présent, et -1 sinon */
+int inWorkTree(WorkTree* wt, char* name);
 
-// Q.3 : La fonction insertFirst ajoute un element en tete de liste 
-void insertFirst(List *L,Cell *C);
+/* Q.6 La fonction appendWorkTree ajoute un fichier ou répertoire au WorkTree 
+(s’il n’existe pas déjà) */
+int appendWorkTree(WorkTree* wt, char* name, char* hash, int xmode);
 
-/* Q.4 : la fonction ctos retourne la chaine de caracteres representee 
-par la cellure passee en parametre (c) */
-char * ctos(Cell *c);
+/* Q.7 La fonction wtts convertit un WorkTree en une chaîne de caractères 
+composée des représentations des WorkFile séparées par un saut de ligne
+(caractère ’\n’) */
+char* wtts(WorkTree* wt);
 
-/* Q.4 : la fonction ltos transforme une liste en une chaine de caracteres
-sous la forme suivante chaine1|chaine2|chaine3|... */
-char* ltos(List* L);
+/* Q.8 La fonction stwt convertit une chaîne de caractères représentant 
+un WorkTree en un WorkTree */
+WorkTree * stwt( char * ch );
 
-// Q.5 : La fonction listGet revoie le ieme element d'une liste
-Cell * listGet(List *L,int i);
+/* Q.9 La fonction wttf écrit dans le fichier file la chaine de 
+caractères représentant un WorkTree */
+int wttf(WorkTree* wt, char* file);
 
-/* Q.6 : La fonction searchList recherche un element dans une liste 
-a partir de son contenu et renvoie une reference vers lui ou NULL 
-s’il n’est pas dans la liste */
-Cell * searchList(List *L, char *str);
+/* Q.10 La fonction ftwt construit un WorkTree à partir d'un fichier qui 
+contient sa représentation en chaine de caratères */
+WorkTree* ftwt(char* file);
 
-/* Q.7 : La fonction stol permet de transformer une chaine de 
-caracteres representant une liste en une liste chainee */
-List * stol(char *s);
 
-// Q.8 : La fonction ltof permet d'ecrire une liste dans un fichier 
-void ltof(List* L, char* path);
+//EXERCICE 5
 
-/* Q.8 : La fonction ftol permet d'ecrire une liste enregistree dans 
-un fichier */
-List* ftol(char* path);
+/* La fonction getChmod retourne les autorisations d'un fichier ou d'un 
+répertoire sous forme d'un entier */
+int getChmod(const char * path );
 
-// Fonction supplémentaire pour les tests 
-void afficherListe(List liste);
+/* La fonction setMode permet de modifier les autorisations d'un fichier 
+ou d'un répertoire */
+void setMode (int mode , char * path );
 
-//EXERCICE 3
+/* Q.1 La fonction hashToFile crée un répertoire en utilisant le hash donné 
+en paramètre. Elle retourne le chemin de ce répertoire */
+char* hashToFile(char* hash);
 
-/* Q.1 La fonction listdir prend en parametre une adresse et renvoie 
-une liste contenant le noms des fichiers et repertoires qui s’y trouvent */
-List *listdir(char* root_dir);
+/* Q.1 La fonction blobWorkTree crée un fichier temporaire représentant le 
+WorkTree pour pouvoir ensuite créer l'enregistrement instantané du 
+WorkTree (avec l'extension ".t"), Elle retourne enfin le hash du 
+fichier temporaire */
+char* blobWorkTree(WorkTree* wt);
 
-/* Q.2 La fonction file_exists retourne 1 si le fichier existe dans le 
-repertoire courant et 0 sinon en utilisant la fonction precedente */
-int file_exists(char *file);
+/* Q.2 La fonction concat_paths concatène deux chemins (path1 et path2) 
+pour créer un chemin absolu. Elle renvoie le chemin absolu résultant */
+char *concat_paths(char *path1, char *path2);
 
-/* Q.3 La fonction cp copie le contenu d’un fichier vers un autre, 
-en faisant une lecture ligne par ligne du fichier source */
-void cp(char *to, char *from);
+/* Q.2 La fonction isFile vérifie si le chemin passé en paramètre correspond 
+à un fichier régulier existant sur le système de fichiers en retournant 
+une valeur booléenne */
+int isFile(const char *path);
 
-/* Q.4 La fonction hashToPath retourne le chemin d’un fichier 
-a partir de son hash */
-char* hashToPath(char* hash);
+/* Q.2 La fonction saveWorkTree crée un enregistrement instantané de tout 
+le contenu d'un WorkTree, puis de lui-même. Elle renvoie le hash du fichier
+représentant l'état instantané du WorkTree. */
+char* saveWorkTree(WorkTree* wt, char* path) ;
 
-/* Q.5 La fonction blobFile enregistre un instantane du fichier 
-donne en entree */
-void blobFile(char* file);
+//Libère un WorkTree
+void freeWorkTree(WorkTree *wt);
+
+//Librère un WorkFile
+void freeWorkFile(WorkFile *wf);
+
+//Affiche un WorkTree
+void printWorkTree(WorkTree *wt);
+
+/* Q.3 La fonction isWorkTree vérifie si un fichier associé à un hash 
+donné correspond à un WorkTree en cherchant un fichier avec l'extension ".t" 
+ou à un fichier en cherchant un fichier sans l'extension ".t", et retourne 
+1 pour un WorkTree, 0 pour un fichier normal et -1 si le fichier n'existe pas */
+int isWorkTree(char* hash);
+
+/* Q.3 La fonction restoreWorkTree permet de restaurer un WorkTree en utilisant
+les fichiere et dossiers correspondant aux chemins fournis en argument */
+void restoreWorkTree(WorkTree* wt, char* path);
+
 
 #endif
