@@ -331,6 +331,14 @@ void freeWorkFile(WorkFile *wf) {
 	free(wf);
 }
 
+void printWorkTree(WorkTree *wt) {
+	int i=0;
+	while (i<wt->n) {
+		printf("%s\n",wt->tab[i]->name);
+		i++;
+	}
+}
+
 
 int isWorkTree(char* hash) {
     // On vérifie si le hash correspond à un WorkTree en cherchant un fichier avec l'extension ".t"
