@@ -1,5 +1,6 @@
 #include "Work.h"
 
+//EXERCICE 4
 
 WorkFile* createWorkFile(char* name){
     WorkFile* wf = (WorkFile*) malloc(sizeof(WorkFile)); // Alloue de la mémoire pour la structure WorkFile
@@ -9,9 +10,10 @@ WorkFile* createWorkFile(char* name){
     return wf; // Retourne le pointeur sur la structure WorkFile nouvellement créée
 }
 
+
 char* wfts(WorkFile* wf){
     char * ch = malloc (1000* sizeof(char)); // Allocation dynamique de mémoire pour la chaîne de caractères
-    sprintf ( ch , " %s \t %s \t %d", wf->name , wf->hash , wf->mode ) ; // Formatage de la chaîne de caractères
+    sprintf (ch, "%s \t %s \t %d", wf->name, wf->hash, wf->mode) ; // Formatage de la chaîne de caractères
     return ch ; // Retourne la chaîne de caractères formatée
 }
 
@@ -29,18 +31,21 @@ WorkFile* stwf(char* ch) {
     return wf;  // Retourne l'adresse du WorkFile créé
 }
 
+
 WorkTree* initWorkTree() {
-    // allocation dynamique d'un pointeur WorkTree
+    // Allocation dynamique d'un pointeur WorkTree
     WorkTree* wt = malloc(sizeof(WorkTree));
-    // allocation dynamique d'un tableau de pointeurs WorkFile
+    // Allocation dynamique d'un tableau de pointeurs WorkFile
     wt->tab = malloc(N_WF * sizeof(WorkFile*));
-    // initialisation de la taille maximale de la WorkTree
+    // Initialisation de la taille maximale de la WorkTree
     wt->size = N_WF;
-    // initialisation du nombre d'éléments dans la WorkTree à 0
+    // Initialisation du nombre d'éléments dans la WorkTree à 0
     wt->n = 0;
-    // renvoie le pointeur WorkTree initialisé
+    // Renvoie le pointeur WorkTree initialisé
     return wt;
 }
+
+
 int inWorkTree(WorkTree* wt, char* name) {
     // Parcourir chaque élément du tableau de WorkFile dans le WorkTree
     for (int i = 0; i < wt->n; i++) {
@@ -54,6 +59,7 @@ int inWorkTree(WorkTree* wt, char* name) {
     return -1;
 }
 
+
 int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
     int ind = inWorkTree(wt, name); // vérifier si le fichier ou répertoire existe déjà dans le WorkTree
     if (ind >= 0) { // si le fichier ou répertoire existe déjà, retourner une erreur
@@ -65,7 +71,8 @@ int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
         wt->tab[wt->n].name = strdup(name); // copier le nom du nouveau WorkFile dans l'ancien WorkFile
         if (hash != NULL) { // si le hash est présent, copier la propriété hash du nouveau WorkFile dans l'ancien WorkFile
             wt->tab[wt->n].hash = strdup(hash);
-        } else { // sinon, mettre la propriété hash à NULL
+        } 
+        else { // sinon, mettre la propriété hash à NULL
             wt->tab[wt->n].hash = NULL;
         }
         wt->n++; // mettre à jour le nombre d'éléments dans le tableau
@@ -73,7 +80,6 @@ int appendWorkTree(WorkTree* wt, char* name, char* hash, int mode) {
     }
     return ind; // retourner l'indice du WorkFile existant pour indiquer que l'ajout a échoué
 }
-
 
 
 char* wtts(WorkTree* wt) {
@@ -87,6 +93,7 @@ char* wtts(WorkTree* wt) {
     }
     return str;
 }
+
 
 WorkTree* stwt(char* str) {
     WorkTree* wt = (WorkTree*)malloc(sizeof(WorkTree)); // allouer une mémoire pour la structure WorkTree
@@ -114,6 +121,8 @@ WorkTree* stwt(char* str) {
     }
     return wt;
 }
+
+
 int wttf(WorkTree* wt, char* file) {
     
     // ouverture du fichier en mode écriture
@@ -137,7 +146,6 @@ int wttf(WorkTree* wt, char* file) {
 
     return 0;
 }
-
 
 
 WorkTree* ftwt(char* file) {
@@ -167,6 +175,7 @@ WorkTree* ftwt(char* file) {
 }
 
 
+//EXERCICE 5
 
 int getChmod(const char* path) {
     struct stat ret;
@@ -219,8 +228,7 @@ char * blobWorkTree(WorkTree* wt) {
     return hash;
 }
 
-// Concatène deux chemins (path1 et path2) pour créer un chemin absolu
-// Renvoie le chemin absolu résultant
+
 char *concat_paths(char *path1, char *path2) {
     // Alloue de la mémoire pour le chemin absolu résultant
     char *result = malloc(strlen(path1) + strlen(path2) + 1);
@@ -245,8 +253,6 @@ int isFile(const char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
-// Crée un enregistrement instantané de tout le contenu d'un WorkTree, puis de lui-même.
-// Renvoie le hash du fichier représentant l'état instantané du WorkTree.
 char *saveWorkTree(WorkTree *wt, char *path) {
     // Parcourt le tableau de WorkFile de wt
     for (int i = 0; i < wt->n; i++) {
@@ -281,9 +287,6 @@ char *saveWorkTree(WorkTree *wt, char *path) {
     // Crée un enregistrement instantané de l'état actuel du WorkTree et retourne son hash
     return blobWorkTree(wt);
 }
-
-
-
 
 
 int isWorkTree(char* hash) {
@@ -336,29 +339,103 @@ void restoreWorkTree(WorkTree* wt, char* path) {
 }
 
 
-
+/*
 int main(){
     
-    /*
-    WorkFile* wf1= createWorkFile("Wf1");
-    char * cwf1 = wfts(wf1);
-    printf("%s ,",cwf1);
+    //EXERCICE 4 
 
-    WorkTree* wt1 = initWorkTree();
-    wt1->tab[0]=*(stwf(cwf1));
-    printf("%s ,",wfts(&(wt1->tab[0])));
+    WorkFile* wf1 = createWorkFile("file1");
+    WorkFile* wf2 = createWorkFile("file2");
 
-    appendWorkTree(wt1,cwf1, "OOO", 777);
-    int indwf1 = inWorkTree(wt1,cwf1);
-    printf("%d\t,",indwf1);
+    char* wfts1 = wfts(wf1);
+    printf("WorkFile 1 : %s\n", wfts1);
+    char* wfts2 = wfts(wf2);
+    printf("WorkFile 2 : %s\n", wfts2);
 
-    appendWorkTree(wt1,"WF2", "OOO", 777);
-    char* cwt1 = wtts(wt1);
-    printf("%s\t,",cwt1);
+    WorkFile* wf3 = stwf("file3 123456 777");
+    if (wf3 != NULL) {
+        char* wfts3 = wfts(wf3);
+        printf("WorkFile 3 : %s\n", wfts3);
+    }
 
-    WorkTree* wt2= stwt(cwt1); 
-    wttf(wt1,"etst.txt");
-    WorkTree* wt3 = ftwt("etst.txt");
-*/
+    WorkTree* wt = initWorkTree();
+    int ret = appendWorkTree(wt, "file1", NULL, 1);
+    if (ret == 0) {
+        printf("WorkFile 1 ajouté dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de l'ajout de WorkFile 1 dans WorkTree\n");
+    }
+
+    ret = appendWorkTree(wt, "file2", "123456", 2);
+    if (ret == 0) {
+        printf("WorkFile 2 ajouté dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de l'ajout de WorkFile 2 dans WorkTree\n");
+    }
+
+    ret = appendWorkTree(wt, "file1", "456789", 3);
+    if (ret == 0) {
+        printf("WorkFile 1 mis à jour dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de la mise à jour de WorkFile 1 dans WorkTree\n");
+    }
+
+    int index = inWorkTree(wt, "file2");
+    if (index != -1) {
+        printf("WorkFile 2 trouvé dans WorkTree à l'indice %d\n", index);
+    }
+    else {
+        printf("WorkFile 2 non trouvé dans WorkTree\n");
+    }
+
+    char* wtts1 = wtts(wt);
+    printf("WorkTree : %s\n", wtts1);
+
+    free(wf1);
+    free(wf2);
+    free(wf3);
+    free(wfts1);
+    free(wfts2);
+    free(wtts1);
+    free(wt->tab);
+    free(wt);
+
+    //EXERCICE 5
+
+    // Test de la fonction getChmod
+    printf("getChmod: %d\n", getChmod("testfile.txt"));
+
+    // Test de la fonction setMode
+    setMode(0644, "testfile.txt");
+
+    // Test de la fonction hashToFile
+    char* path = hashToFile("abcd1234");
+    printf("hashToFile: %s\n", path);
+
+    // Test de la fonction blobWorkTree
+    WorkTree* wt = initWorkTree();
+    appendWorkTree(wt, "testdir", NULL, 0);
+    char* hash = blobWorkTree(wt);
+    printf("blobWorkTree: %s\n", hash);
+
+    // Test de la fonction concat_paths
+    char* result = concat_paths("/path/to/dir", "filename.txt");
+    printf("concat_paths: %s\n", result);
+    free(result);
+
+    // Test de la fonction isFile
+    printf("isFile: %d\n", isFile("testfile.txt"));
+
+    // Test de la fonction saveWorkTree
+    WorkTree* wt2 = initWorkTree();
+    appendWorkTree(wt2, "testdir", NULL, 0);
+    char* hash2 = saveWorkTree(wt2, ".");
+    printf("saveWorkTree: %s\n", hash2);
+
     return 1;
 }
+
+*/
