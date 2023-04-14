@@ -30,3 +30,26 @@ List* branchList(char* branch);
 //ontruit et retourne une liste chainee contenant le hash de tous les commits de la branche
 List* getAllCommits();
 //renvoie la liste des hash des commits de toutes les branches
+
+void restoreCommit(char* hash commit)  
+//permet de restaurer le worktree associe a un commit dont le hash est donne en parametre.
+
+void myGitCheckoutBranch(char* branch);
+
+
+List* filterList(List* L, char* pattern);
+
+void myGitCheckoutCommit(char* pattern);
+
+
+/* Fonction qui retourne l'élément à l'indice i dans la liste */
+char* getElement(List* L, int i) ;
+
+/* Fonction qui affiche tous les éléments de la liste */
+void printList(List* L);
+
+/* Fonction qui retourne la longueur de la liste */
+int length(List* L) ;
+
+/* Fonction qui libère toute la mémoire allouée pour la liste */
+void freeList(List* L) ;
