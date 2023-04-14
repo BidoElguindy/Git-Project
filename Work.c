@@ -253,39 +253,90 @@ int isFile(const char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
-char *saveWorkTree(WorkTree *wt, char *path) {
-    // Parcourt le tableau de WorkFile de wt
-    for (int i = 0; i < wt->n; i++) {
-        // Concatène le chemin absolu du WorkFile avec le chemin donné en paramètre pour obtenir un chemin absolu complet
-        char *absPath = concat_paths(path, wt->tab[i].name);
-        // Vérifie si le WorkFile correspond à un fichier
+char* saveWorkTree(WorkTree* wt, char* path) {
+    // Affichage du chemin du WorkTree en cours de sauvegarde
+    printf("saveworktree path : %s\n",path);
+    
+    // Pour chaque élément du WorkTree
+    for (int i=0;i<wt->n;i++) {
+        // Concaténation du chemin absolu du WorkTree avec le nom de l'élément
+        char *absPath = concat_paths(path,wt->tab[i].name);
+        
+        // Affichage de l'élément en cours de sauvegarde
+        printf("sauvegarde de %s\n",absPath);
+        
+        // Si l'élément est un fichier
         if (isFile(absPath) == 1) {
-            // Crée un enregistrement instantané du fichier
+            printf("regular file\n");
+            
+            // Création d'un blob représentant le contenu du fichier
             blobFile(absPath);
-            // Récupère le hash du fichier
+            
+            // Calcul du hash SHA256 du fichier
             wt->tab[i].hash = sha256file(absPath);
-            // Récupère le mode du fichier
-            wt->tab[i].mode = getChmod(absPath);
-        } else { // Sinon, le WorkFile correspond à un répertoire
-            // Crée un nouveau WorkTree pour tout le contenu du répertoire
-            WorkTree *wt2 = initWorkTree();
-            List *L = listdir(absPath);
-            // Parcourt tous les éléments du répertoire et les ajoute au nouveau WorkTree
-            for (Cell *ptr = *L; ptr != NULL; ptr = ptr->next) {
-                // Ignore les fichiers cachés
-                if (ptr->data[0] == '.') {
-                    continue;
-                }
-                appendWorkTree(wt2, ptr->data,NULL,0);
-            }
-            // Récupère le hash du WorkTree représentant le contenu du répertoire
-            wt->tab[i].hash = saveWorkTree(wt2, absPath);
-            // Récupère le mode du répertoire
+            
+            // Récupération des permissions (chmod) du fichier
             wt->tab[i].mode = getChmod(absPath);
         }
+        // Si l'élément est un répertoire
+        else {
+            printf("dir\n");
+            
+            // Initialisation d'un nouveau WorkTree pour le sous-répertoire
+            WorkTree *wt2 = initWorkTree();
+            
+            // Liste des éléments du sous-répertoire
+            List *L = listdir(absPath);
+            
+            for(Cell* ptr = *L; ptr != NULL; ptr = ptr->next) {
+                // Si l'élément ne commence pas par un point (fichier caché)
+                if (ptr->data[0] != '.') {
+                    // Ajout de l'élément au WorkTree
+                    appendWorkTree(wt2,ptr->data,NULL,0);
+                }
+            }
+            // Libération de la mémoire allouée pour la liste
+            freeList(L);
+                
+            // Sauvegarde du sous-répertoire et récupération de son hash
+            wt->tab[i].hash = saveWorkTree(wt2,absPath);
+                
+            // Récupération des permissions (chmod) du répertoire
+            wt->tab[i].mode = getChmod(absPath);
+            // Libération de la mémoire allouée pour le sous-WorkTree
+            freeWorkTree(wt2);
+        }
+        // Libération de la mémoire allouée pour le chemin absolu
+        free(absPath);
     }
-    // Crée un enregistrement instantané de l'état actuel du WorkTree et retourne son hash
+    // Affichage d'une information de sortie de la fonction
+    printf("exit saveworktree path : %s\n",path);
+    
+    // Création d'un blob représentant l'état instantané du WorkTree
     return blobWorkTree(wt);
+}
+
+
+void freeWorkTree(WorkTree *wt) {
+	for (int i=0;i<wt->n;i++) {
+		freeWorkFile(&wt->tab[i]);
+	}
+	free(wt->tab);
+	free(wt);
+}
+
+void freeWorkFile(WorkFile *wf) {
+	free(wf->name);
+	free(wf->hash);
+	free(wf);
+}
+
+void printWorkTree(WorkTree *wt) {
+	int i=0;
+	while (i<wt->n) {
+		printf("%s\n",wt->tab[i].name);
+		i++;
+	}
 }
 
 
