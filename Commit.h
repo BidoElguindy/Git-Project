@@ -78,5 +78,7 @@ Commit* ftc(char* file);
 en passant par un fichier temporaire. Elle retourne le hash du fichier temporaire   */
 char* blobCommit(Commit* c);
 
+//Libère Commit
+void freeCommit(Commit *c);
 
 #endif
