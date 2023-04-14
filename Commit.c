@@ -213,6 +213,21 @@ void freeCommit(Commit *c) {
     free(c);
 }
 
+WorkTree* btwt(const char* branch) {
+  char* hash_commit = getRef(branch);
+  assert(hash_commit != NULL);
+  WorkTree* wt;
+  if(strlen(hash_commit) == 0) {
+    wt = initWorkTree();
+  } else {
+    Commit* c = htc(hash_commit);
+    wt = ctwt(c);
+    freeCommit(c);
+  }
+  free(hash_commit);
+  return wt;
+}
+
 /*
 
 int main() {
