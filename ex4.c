@@ -95,7 +95,7 @@ char* wtts(WorkTree* wt) {
 }
 
 WorkTree* stwt(char* str) {
-    WorkTree* wt = (WorkTree*)malloc(sizeof(WorkTree)); // allouer une mémoire pour la structure WorkTree
+    WorkTree* wt = (WorkTree*)malloc(sizeof(WorkTree)); 
     wt->size = N_WF; // initialiser la taille par défaut du tableau à N_WF
     wt->n = 0; // initialiser le nombre d'éléments dans le tableau à 0
     wt->tab = (WorkFile*)malloc(sizeof(WorkFile) * wt->size); // allouer une mémoire pour le tableau de WorkFile
