@@ -81,4 +81,8 @@ char* blobCommit(Commit* c);
 //Libère Commit
 void freeCommit(Commit *c);
 
+// Retourne le WorkTree correspondant à la dernière version de la branche donnée en paramètre.
+WorkTree* btwt(const char* branch);
+
+
 #endif
