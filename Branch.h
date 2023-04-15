@@ -1,13 +1,7 @@
-#ifndef Branch_h
-#define Branch_h
+#ifndef BRANCH_h
+#define BRANCH_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <assert.h>
-#include <dirent.h>
-#include <sys/stat.h> 
+#include "Refs.h"
 
 
 void initBranch ();
@@ -21,7 +15,6 @@ char* getCurrentBranch();
 
  
 
-
 char* hashToPathCommit(char* hash);
 //Construit le chemin vers le fichier commit associé à un hash de commit
 void printBranch(char* branch);
@@ -31,7 +24,7 @@ List* branchList(char* branch);
 List* getAllCommits();
 //renvoie la liste des hash des commits de toutes les branches
 
-void restoreCommit(char* hash commit)  
+void restoreCommit(char* hash_commit) ;
 //permet de restaurer le worktree associe a un commit dont le hash est donne en parametre.
 
 void myGitCheckoutBranch(char* branch);
@@ -51,5 +44,6 @@ void printList(List* L);
 /* Fonction qui retourne la longueur de la liste */
 int length(List* L) ;
 
-/* Fonction qui libère toute la mémoire allouée pour la liste */
-void freeList(List* L) ;
+
+
+#endif
