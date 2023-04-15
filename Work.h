@@ -1,11 +1,6 @@
 #ifndef WORK_h
 #define WORK_h
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/stat.h>
 #include "List.h"
 
 #define N_WF 20
@@ -100,6 +95,15 @@ int isFile(const char *path);
 le contenu d'un WorkTree, puis de lui-même. Elle renvoie le hash du fichier
 représentant l'état instantané du WorkTree. */
 char* saveWorkTree(WorkTree* wt, char* path) ;
+
+//Libère un WorkTree
+void freeWorkTree(WorkTree *wt);
+
+//Librère un WorkFile
+void freeWorkFile(WorkFile *wf);
+
+//Affiche un WorkTree
+void printWorkTree(WorkTree *wt);
 
 /* Q.3 La fonction isWorkTree vérifie si un fichier associé à un hash 
 donné correspond à un WorkTree en cherchant un fichier avec l'extension ".t" 
