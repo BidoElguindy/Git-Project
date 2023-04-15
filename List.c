@@ -350,11 +350,9 @@ int file_exists(char *file){
     List* L = listdir(".");            // Initialisation d'une liste chainée contenant les noms des fichiers et des répertoires du répertoire courant avec la fonction listdir()
     Cell* c = searchList(L,file);      // Recherche de la cellule contenant le nom du fichier passé en paramètre avec la fonction searchList()
     if(c!=NULL){                       // Vérifie que la cellule contenant le nom du fichier a été trouvée
-        freeCell(c);
         freeList(L);
         return 1;                      // Retourne 1 si le fichier existe
     }
-    freeCell(c);
     freeList(L);
     return 0;                          // Retourne 0 si le fichier n'existe pas
 }
