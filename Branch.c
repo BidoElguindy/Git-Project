@@ -1,10 +1,12 @@
 #include "Branch.h"
 
+
 void initBranch() {
-    FILE *f = fopen(".currentbranch", "w");
+    FILE *f = fopen(".current_branch", "w");
     fputs("master", f);
     fclose(f);
 }
+
 
 int branchExists(char* branch) {
     // Obtient la liste des fichiers et des répertoires dans le répertoire .refs
@@ -13,21 +15,15 @@ int branchExists(char* branch) {
     return searchList(refs, branch) != NULL;
 }
 
+/* Crée une nouvelle branche avec le même hash que la branche HEAD actuelle */
 void createBranch(char* branch) {
-    // Récupérer le hash du commit courant depuis HEAD
-    char* headRef = getRef("HEAD");
-    char* commitHash = getRef(headRef);
-
-    // Créer la nouvelle référence de branche avec le hash du commit
-    char* branchRef = malloc(strlen(branch) + 6);  // ajouter le préfixe ".refs/"
-    sprintf(branchRef, ".refs/%s", branch);
-    setRef(branchRef, commitHash);
-    free(branchRef);
-
-    // Libérer la mémoire allouée par getRef
-    free(headRef);
-    free(commitHash);
+    // Récupère le hash de la référence HEAD
+    char* hash = getRef("HEAD");
+    
+    // Crée ou met à jour la référence de la nouvelle branche avec le même hash que la référence HEAD
+    createUpdateRef(branch, hash);
 }
+
 
 char* getCurrentBranch() {
     // Ouvre le fichier .current_branch en mode lecture
@@ -126,7 +122,7 @@ List* getAllCommits() {
         while(cell != NULL) {
             /* Ajout du commit dans la liste L s'il n'est pas déjà présent */
             if(searchList(L, cell->data) == NULL) {
-                insertFirst(&L, buildCell(cell->data));
+                insertFirst(L, buildCell(cell->data));
             }
             cell = cell->next;
         }
@@ -139,6 +135,7 @@ List* getAllCommits() {
 void restoreCommit(char* hash_commit) {
     // On récupère le chemin du commit à partir de son hash
     char* commit_path = hashToPathCommit(hash_commit);
+    printf("%s \n",commit_path);
 
     // On crée un objet commit à partir du chemin récupéré
     Commit* c = ftc(commit_path);
@@ -175,7 +172,7 @@ List* filterList(List* L, char* pattern) {
         // On vérifie si l'élément commence par le pattern donné
         if (strncmp(current->data, pattern, strlen(pattern)) == 0) {
             // Si c'est le cas, on ajoute l'élément à la liste filtrée
-            insertFirst(&filteredList, buildCell(current->data));
+            insertFirst(filteredList, buildCell(current->data));
         }
     }
 
@@ -223,20 +220,7 @@ int length(List* L) {
     return count;
 }
 
-/* Fonction qui libère toute la mémoire allouée pour la liste */
-void freeList(List* L) {
-    Cell* ptr = *L;
-    Cell* temp;
 
-    while (ptr != NULL) {
-        temp = ptr->next;
-        free(ptr->data);
-        free(ptr);
-        ptr = temp;
-    }
-
-    *L = NULL;
-}
 
 void myGitCheckoutCommit(char* pattern) {
     // Récupération de la liste de tous les commits
@@ -266,3 +250,4 @@ void myGitCheckoutCommit(char* pattern) {
     freeList(allCommits);
     freeList(filteredCommits);
 }
+
