@@ -243,6 +243,7 @@ List* stol(char* s){
         // On insère l'élément dans la liste chainée
         insertFirst(L, buildCell(result));
     }
+    free(result);
     // On retourne la liste chainée
     return L;
 }
@@ -257,14 +258,6 @@ void afficherListe(List liste) {
     }
 }
 
-void freeList(List *l) {
-  if(l==NULL) return;
-  for(Cell *c=*l, *p; c; c=p) {
-    p=c->next;
-    freeCell(c);
-  }
-  free(l);
-}
 
 void ltof(List* L, char* path) {
     // Ouverture du fichier pour l'écriture
@@ -327,20 +320,29 @@ List* ftol(char* path){
 
 //EXERCICE 3 
 
-
-List* listdir(char* root_dir){     
-    List* L=initList();            // Initialisation d'une nouvelle liste vide à partir de la fonction initList()
-    DIR * dp = opendir (root_dir); // Ouvre le répertoire passé en paramètre à l'aide de la fonction opendir() et stocke le pointeur renvoyé dans dp.
-    struct dirent * ep ;           // Structure qui contiendra les informations sur les fichiers et répertoires trouvés
-
-    if (dp != NULL){               // Vérifie que le répertoire a été ouvert correctement
-        while ((ep = readdir (dp)) != NULL){    // Boucle qui itère sur chaque entrée dans le répertoire
-            Cell* c=buildCell(ep->d_name);      // Crée une nouvelle cellule et la remplit avec le nom du fichier ou du répertoire trouvé
-            insertFirst(L,c);                   // Insère la cellule en haut de la liste chainée
+List* listdir(char* root_dir){ // Déclaration de la fonction listdir prenant en paramètre le chemin du répertoire à lister
+    DIR *dp; // Pointeur vers le répertoire ouvert
+    struct dirent *ep; // Structure dirent qui contiendra les informations de chaque élément du répertoire
+    List* L = initList(); // Initialisation d'une liste vide pour stocker les noms des éléments du répertoire
+    *L = NULL; // Initialisation du premier élément de la liste à NULL
+    Cell* temp_cell; // Pointeur vers une cellule temporaire qui sera insérée dans la liste
+    dp = opendir (root_dir); // Ouverture du répertoire donné en paramètre
+    if (dp != NULL){ // Si l'ouverture du répertoire a réussi
+        while ((ep = readdir (dp)) != NULL) { // Parcours de tous les éléments du répertoire
+            temp_cell = buildCell(ep->d_name); // Construction d'une cellule contenant le nom de l'élément courant
+            insertFirst(L,temp_cell); // Insertion de la cellule en début de liste
+            List ptr = *L; // Initialisation d'un pointeur pour parcourir la liste
+            while (ptr != NULL){ // Parcours de tous les éléments de la liste
+                ptr = ptr->next; // Passage à l'élément suivant
+            }
         }
+        (void) closedir (dp); // Fermeture du répertoire
     }
-    closedir(dp);                  // Ferme le répertoire avec la fonction closedir()
-    return L;                      // Retourne le pointeur vers la liste chainée contenant les noms des fichiers et répertoires trouvés
+    else{ // Si l'ouverture du répertoire a échoué
+        perror ("Couldn't open the directory"); // Affichage d'un message d'erreur
+        return NULL; // Retourne NULL pour signaler l'erreur
+    }
+    return L; // Retourne la liste contenant les noms des éléments du répertoire
 }
 
 
@@ -348,8 +350,12 @@ int file_exists(char *file){
     List* L = listdir(".");            // Initialisation d'une liste chainée contenant les noms des fichiers et des répertoires du répertoire courant avec la fonction listdir()
     Cell* c = searchList(L,file);      // Recherche de la cellule contenant le nom du fichier passé en paramètre avec la fonction searchList()
     if(c!=NULL){                       // Vérifie que la cellule contenant le nom du fichier a été trouvée
+        freeCell(c);
+        freeList(L);
         return 1;                      // Retourne 1 si le fichier existe
     }
+    freeCell(c);
+    freeList(L);
     return 0;                          // Retourne 0 si le fichier n'existe pas
 }
 
@@ -404,9 +410,22 @@ void blobFile(char* file) {
     free(ch);
 }
 
+void freeCell(Cell *c) {
+	if (c) {
+		freeCell(c->next);
+		free(c->data);
+	}
+	free(c);
+}
 
+void freeList(List *l) {
+	freeCell(*l);
+	free(l);
+}
+
+/*
 int main(){
-
+    
     //EXERCICE 1  
 
 	// Nom du fichier à hasher
@@ -524,7 +543,8 @@ int main(){
     
     free(path);                                 // Libération de la mémoire allouée
     free(L4);
-    
+
     return 0;
 }
 
+*/
