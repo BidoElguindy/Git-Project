@@ -1,5 +1,5 @@
-#ifndef commit_h
-#define commit_h
+#ifndef Commit_h
+#define Commit_h
 
 #include "Work.h"
 
