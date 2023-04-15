@@ -13,9 +13,11 @@ kvp* createKeyVal(char* key, char* val) {
 }
 
 void freeKeyVal(kvp* kv) {
-    free(kv->key);
-    free(kv->value);
-    free(kv);
+    if (kv != NULL){
+        free(kv->key);
+        free(kv->value);
+        free(kv);
+    }
 }
 
 
@@ -28,15 +30,20 @@ char* kvts(kvp* k) {
     return buff;
 }
 
-kvp* stkv(char* str) {
-    // On utilise la fonction strtok pour extraire la clé et la valeur de la chaîne.
-    // On récupère la première sous-chaîne jusqu'au premier délimiteur ':'.
-    char* key = strtok(str, ":");
-    // On récupère la deuxième sous-chaîne à partir du délimiteur ':'.
-    char* value = strtok(NULL, ":");
-    // On crée la structure kvp à partir de la clé et de la valeur extraites.
-    return createKeyVal(key, value);
+kvp* stkv(char* str) {                     
+    char* p = strchr(str, ':');            // Trouver la première occurrence de ':' dans la chaîne str et renvoyer un pointeur vers l'endroit où il a été trouvé
+    if (p == NULL) {                       // Si le caractère ':' n'est pas trouvé, retourner NULL
+        return NULL;
+    }
+    size_t len_key = p - str;              // Calculer la longueur de la clé en soustrayant la position de ':' de la position de début de la chaîne str
+    char* key = (char*) malloc(sizeof(char) * (len_key + 1));   // Allouer de la mémoire pour la clé en fonction de la longueur calculée et ajouter 1 pour le caractère nul de fin de chaîne
+    strncpy(key, str, len_key);            // Copier la sous-chaîne correspondant à la clé dans la chaîne key
+    key[len_key] = '\0';                   // Ajouter le caractère nul de fin de chaîne à la fin de la clé
+    kvp* k = createKeyVal(key, p + 1);     // Appeler la fonction createKeyVal avec la clé et la sous-chaîne correspondant à la valeur, en allouant de la mémoire pour la structure kvp et les chaînes de caractères key et value
+    free(key);                             // Libérer la mémoire allouée pour key, car elle a été copiée dans la structure kvp par createKeyVal
+    return k;                              // Renvoyer la structure kvp
 }
+
 
 
 Commit* initCommit() {
@@ -77,19 +84,9 @@ void commitSet(Commit* c, char* key, char* value) {
     fprintf(stderr, "Error: table de hachage pleine, impossible d'insérer la paire (%s,%s)\n", key, value);
 }
 
-Commit* createCommit(char* hash) {
-    // Allocation de mémoire pour un nouveau Commit
-    Commit* c = initCommit();
-    // Vérification si l'allocation de mémoire a été effectuée correctement
-    if (c == NULL) {
-        fprintf(stderr, "Error: could not allocate memory for commit\n");
-        return NULL;
-    }
-    // Création de la clé "tree" avec la valeur correspondant à l'arbre de travail
-    char* tree_val = kvts(stkv(strcat("tree:", hash)));
-    // Ajout de la clé "tree" avec sa valeur dans le Commit
-    commitSet(c, "tree", tree_val);
-    // Retour du Commit
+Commit* createCommit(char* hash){ 
+    Commit* c = initCommit(); 
+    commitSet(c,"tree", hash);
     return c;
 }
 
@@ -179,75 +176,56 @@ Commit* ftc(char* file) {
     return c;
 }
 
-
 char *blobCommit(Commit *c) {
-    char fname[100] = "/tmp/myfileXXXXXX";
-    mkstemp(fname);
-    ctf(c, fname);
-    char *hash = sha256file(fname);
-    char *path = hashToPath(hash);
-    char *ret = strdup(hash); // Sauvegarde du hash pour rendu de fonction
-	hash[2] = '\0'; // 2 premiers cara du hash pour mkdir
-	char output[1000];
-	if (!file_exists(hash)) {
-        sprintf(output,"mkdir %s",hash);
-	    system(output);
+    char fname[100] = "/tmp/myfileXXXXXX"; // Initialise une chaîne de caractères fname avec un chemin vers un fichier temporaire
+    mkstemp(fname); // Crée un fichier temporaire vide avec le chemin fname
+    ctf(c, fname); // Copie le contenu du Commit c dans le fichier temporaire fname
+    char *hash = sha256file(fname); // Calcule le hash SHA-256 du fichier fname
+    char *path = hashToPath(hash); // Génère un chemin de fichier unique basé sur le hash
+    char *ret = strdup(hash); // Sauvegarde le hash pour le renvoyer en tant que résultat de la fonction
+    hash[2] = '\0'; // Les 2 premiers caractères du hash sont utilisés pour créer un répertoire dans la fonction suivante
+    char output[1000]; // Initialise une chaîne de caractères output
+    if (!file_exists(hash)) { // Vérifie si le répertoire basé sur le hash n'existe pas déjà
+        sprintf(output,"mkdir %s",hash); // Crée une commande shell pour créer le répertoire basé sur le hash
+        system(output); // Exécute la commande shell pour créer le répertoire
     }
-    free(hash);
-	sprintf(output,"touch %s.c",path);
-	system(output);
-	sprintf(output,"%s.c",path);
-	cp(output,fname); // Copie du contenu de wt vers le fichier .t
-    printf("commit sauvegarde dans %s\n",path);
-	free(path);
-    return ret;
+    free(hash); // Libère la mémoire allouée pour le hash
+    sprintf(output,"touch %s.c",path); // Crée une commande shell pour créer un fichier C vide avec le chemin de fichier unique
+    system(output); // Exécute la commande shell pour créer le fichier C vide
+    sprintf(output,"%s.c",path); // Met à jour le chemin du fichier output pour qu'il pointe vers le fichier C vide
+    cp(output,fname); // Copie le contenu du répertoire de travail vers le fichier C vide
+    printf("commit sauvegarde dans %s\n",path); // Affiche le chemin de fichier unique pour le fichier C généré
+    free(path); // Libère la mémoire allouée pour le chemin de fichier unique
+    return ret; // Renvoie le hash SHA-256 calculé
 }
 
 void freeCommit(Commit *c) {
-    if (c!=NULL) {
-        for (int i=0;i<c->n;i++) {
-            freeKeyVal(c->T[i]);
+    if (c!=NULL) { // Vérifie si le Commit c n'est pas NULL
+        for (int i=0;i<c->n;i++) { // Parcourt tous les éléments de la table de hachage du Commit c
+            freeKeyVal(c->T[i]); // Libère la mémoire allouée pour chaque élément de la table de hachage
         }
-        free(c->T);
+        free(c->T); // Libère la mémoire allouée pour la table de hachage
     }
-    free(c);
+    free(c); // Libère la mémoire allouée pour le Commit c
 }
 
-WorkTree* btwt(const char* branch) {
-  // Récupération du hash du dernier commit de la branche
-  char* hash_commit = getRef(branch);
-  assert(hash_commit != NULL);
-
-  WorkTree* wt;
-  if(strlen(hash_commit) == 0) {
-    // Si la branche n'a aucun commit, on crée un WorkTree vide
-    wt = initWorkTree();
-  } else {
-    // Sinon, on récupère le dernier commit de la branche et on construit son WorkTree correspondant
-    Commit* c = htc(hash_commit);
-    wt = ctwt(c);
-    freeCommit(c);
-  }
-
-  // Libération de la mémoire allouée pour hash_commit
-  free(hash_commit);
-
-  return wt;
-}
 
 /*
 
 int main() {
-    // Test createKeyVal et freeKeyVal
-    printf("Testing createKeyVal and freeKeyVal...\n");
+    printf("Test Exercice 6 \n");
+    printf("\n");
+    
+     // Test createKeyVal et freeKeyVal
+    printf("Testing createKeyVal and freeKeyVal \n");
     kvp* kv = createKeyVal("key", "value");
     printf("Key: %s, Value: %s\n", kv->key, kv->value);
     free(kv);
 
     // Test kvts et stkv
-    printf("Testing kvts and stkv...\n");
-    char* kv_string = "key=value\n";
-    kvp* kv2 = stkv(kv_string);
+    printf("Testing kvts and stkv\n");
+    char* kv_string = "key: value\n";
+    kvp* kv2 = stkv(kv_string);  
     printf("Key: %s, Value: %s\n", kv2->key, kv2->value);
     char* kv_string2 = kvts(kv2);
     printf("String: %s\n", kv_string2);
@@ -255,41 +233,40 @@ int main() {
     free(kv_string2);
 
     // Test initCommit et commitSet
-    printf("Testing initCommit and commitSet...\n");
-    Commit* c = initCommit(10);
+    printf("Testing initCommit and commitSet\n");
+    Commit* c = initCommit();
     commitSet(c, "key1", "value1");
     commitSet(c, "key2", "value2");
     printf("Value for key1: %s\n", commitGet(c, "key1"));
     printf("Value for key2: %s\n", commitGet(c, "key2"));
 
     // Test createCommit
-    printf("Testing createCommit...\n");
+    printf("Testing createCommit\n");
     Commit* c2 = createCommit("hash123");
     commitSet(c2, "key3", "value3");
     char* commit_string = cts(c2);
     printf("Commit string: %s\n", commit_string);
-    free(commit_string);
 
     // Test commitGet
-    printf("Testing commitGet...\n");
+    printf("Testing commitGet\n");
     char* value = commitGet(c2, "key3");
     printf("Value for key3: %s\n", value);
     free(value);
 
     // Test stc
-    printf("Testing stc...\n");
+    printf("Testing stc\n");
     Commit* c3 = stc(commit_string);
     printf("Value for key3: %s\n", commitGet(c3, "key3"));
     free(commit_string);
 
     // Test ctf et ftc
-    printf("Testing ctf and ftc...\n");
-    ctf(c2, "test_commit.txt");
+    printf("Testing ctf and ftc\n");
+    ctf(c3, "test_commit.txt");
     Commit* c4 = ftc("test_commit.txt");
     printf("Value for key3: %s\n", commitGet(c4, "key3"));
 
     // Test blobCommit
-    printf("Testing blobCommit...\n");
+    printf("Testing blobCommit\n");
     char* hash = blobCommit(c2);
     printf("Blob hash: %s\n", hash);
     free(hash);
@@ -299,7 +276,7 @@ int main() {
     freeCommit(c2);
     freeCommit(c3);
     freeCommit(c4);
-
+     
     return 0;
 }
 
