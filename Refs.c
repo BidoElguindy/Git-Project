@@ -1,4 +1,5 @@
-#include "refs.h"
+#include "Refs.h"
+
 
 void initRefs(){
     if(!file_exists(".refs")){
@@ -8,7 +9,7 @@ void initRefs(){
     }
 }
 
-void creerUpdateRef(char* ref_name, char* hash) {
+void createUpdateRef(char* ref_name, char* hash) {
     // Construire le nom de fichier de la référence à partir du nom de référence donné
     char filename[100];
     sprintf(filename, ".refs/%s", ref_name);
@@ -29,48 +30,64 @@ void creerUpdateRef(char* ref_name, char* hash) {
     fclose(fp);
 }
 
+/* to be deleted 
+char * getPathRef(){
+    char abs_path[1024];
+    char* rel_path = ".refs"; // chemin relatif du dossier REF
 
+    if (getcwd(abs_path, sizeof(abs_path)) != NULL) {
+        // le chemin absolu a été récupéré avec succès, on peut concaténer avec le chemin relatif du dossier REF
+        strcat(abs_path, "/");
+        strcat(abs_path, rel_path);
+    } else {
+        // erreur lors de la récupération du chemin absolu
+        printf("Erreur lors de la récupération du chemin absolu.");
+    }
+    printf("%s",abs_path);
+    return strdup(abs_path);
+}
+*/
 
-void deleteRef(char* ref_name) {
-    // On construit le chemin absolu du fichier de référence
-    char filename[100];
-    sprintf(filename, ".refs/%s", ref_name);
-
-    // Si le fichier existe, on le supprime
-    if (fileExists(filename)) {
-        if (unlink(filename) == -1) { // unlink supprime le fichier
-            perror("unlink"); // Affiche le message d'erreur associé à errno
-            exit(EXIT_FAILURE); // Arrête le programme en cas d'erreur
-        }
-    } else { // Si le fichier n'existe pas
-        printf("Reference %s does not exist.\n", ref_name);
+void deleteRef(char* ref_name){
+    char ref[256];
+    sprintf(ref, ".refs/%s", ref_name);
+    if(!file_exists(ref)){
+        printf("La refernce %s n'existe pas\n", ref_name);
+    }else{
+        char buff[256];
+        sprintf(buff, "rm .refs/%s", ref_name);
+        system(buff);
     }
 }
 
-char* getRefs(char* ref_name) {
+
+
+char* getRef(char* ref_name) {
     // Alloue de la mémoire pour le résultat
     char *result = malloc(sizeof(char)*256);
     // Récupère la liste de tous les fichiers dans le répertoire ".refs"
     List* l = listdir(".refs");
     // Vérifie si la référence existe
     if (searchList(l,ref_name)==NULL) {
-        printf("The reference %s does not exist\n",ref_name);
+        printf("The reference %s does not exist using the function getRef\n",ref_name);
         return NULL;
+        
+    }else{
+        // Construit le chemin du fichier de la référence
+        char buff[256];
+        sprintf(buff,".refs/%s",ref_name);
+        // Ouvre le fichier
+        FILE *fp = fopen(buff,"r");
+        // Vérifie si le fichier a été ouvert correctement
+        if (fp == NULL) {
+            printf("Error opening file %s\n",ref_name);
+            return NULL;
+        }
+        // Lit le contenu du fichier et le stocke dans le résultat
+        fgets(result,256,fp);
+        // Ferme le fichier
+        fclose(fp);
     }
-    // Construit le chemin du fichier de la référence
-    char buff[256];
-    sprintf(buff,".refs/%s",ref_name);
-    // Ouvre le fichier
-    FILE *fp = fopen(buff,"r");
-    // Vérifie si le fichier a été ouvert correctement
-    if (fp == NULL) {
-        printf("Error opening file %s\n",ref_name);
-        return NULL;
-    }
-    // Lit le contenu du fichier et le stocke dans le résultat
-    fgets(result,256,fp);
-    // Ferme le fichier
-    fclose(fp);
     // Retourne le résultat
     return result;
 }
@@ -87,7 +104,7 @@ void myGitAdd(char *file_or_folder) {
     WorkTree *wt;
     
     // Vérification de l'existence du fichier .add
-    if (!fileExists(".add")) {
+    if (!file_exists(".add")) {
         printf("creating .add\n");
         createFile(".add");
         wt = initWorkTree();
@@ -97,10 +114,10 @@ void myGitAdd(char *file_or_folder) {
     }
     
     // Vérification de l'existence du fichier ou dossier à ajouter
-    if (fileExists(file_or_folder)) {
+    if (file_exists(file_or_folder)) {
         // Ajout du fichier ou dossier à la zone de préparation
         int res = appendWorkTree(wt, file_or_folder, NULL, 0);
-        if (res == -2) {
+        if (res == 0) {
             printf("file or folder already in .add\n");
             return;
         }
@@ -110,6 +127,7 @@ void myGitAdd(char *file_or_folder) {
         printf("file or folder %s does not exist\n", file_or_folder);
     }
 }
+
 
 
 void myGitCommit(char* branch_name, char* message){
@@ -127,9 +145,9 @@ void myGitCommit(char* branch_name, char* message){
     }
     free(l);
     // On récupère le hash du commit précédent
-    char* last_hash = getRefs(branch_name);
+    char* last_hash = getRef(branch_name);
     // On récupère le hash de HEAD
-    char* head_hash = getRefs("HEAD");
+    char* head_hash = getRef("HEAD");
     // Si HEAD n'est pas sur la branche, on ne peut pas faire le commit
     if(strcmp(last_hash,head_hash)!=0){
         printf("HEAD doit pointer sur le dernier commit de la branche\n");
@@ -172,9 +190,9 @@ void myGitCommit(char* branch_name, char* message){
     printf("check apres blobcommit\n");
     freeCommit(c);
     // On met à jour la branche avec le nouveau commit
-    createUpdateRefs(branch_name, hashc);
+    createUpdateRef(branch_name, hashc);
     // On met à jour HEAD avec le bon commit aussi
-    createUpdateRefs("HEAD", hashc);
+    createUpdateRef("HEAD", hashc);
     free(hashc);
     // On libère le WorkTree utilisé
     freeWorkTree(wt);
