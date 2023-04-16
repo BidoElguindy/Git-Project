@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <dirent.h>
 #include <sys/stat.h> 
+#include <stdbool.h>
 
 
 typedef struct cell{
@@ -16,6 +17,7 @@ typedef struct cell{
 
 } Cell;
 typedef Cell* List;
+
 
 //EXERCICE 1 
 
@@ -66,8 +68,6 @@ void ltof(List* L, char* path);
 un fichier */
 List* ftol(char* path);
 
-// Fonction supplémentaire pour les tests 
-void afficherListe(List liste);
 
 //EXERCICE 3
 
@@ -77,7 +77,7 @@ List *listdir(char* root_dir);
 
 /* Q.2 La fonction file_exists retourne 1 si le fichier existe dans le 
 repertoire courant et 0 sinon en utilisant la fonction precedente */
-int file_exists(char *file);
+bool file_exists(char *file);
 
 /* Q.3 La fonction cp copie le contenu d’un fichier vers un autre, 
 en faisant une lecture ligne par ligne du fichier source */
@@ -90,6 +90,11 @@ char* hashToPath(char* hash);
 /* Q.5 La fonction blobFile enregistre un instantane du fichier 
 donne en entree */
 void blobFile(char* file);
+
+/* Fonctions supplémentaires */
+
+// Affiche une liste
+void afficherListe(List liste);
 
 //Libère une liste 
 void freeList(List *l);
