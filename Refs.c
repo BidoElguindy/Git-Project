@@ -34,7 +34,6 @@ void createUpdateRef(char* ref_name, char* hash) {
 char * getPathRef(){
     char abs_path[1024];
     char* rel_path = ".refs"; // chemin relatif du dossier REF
-
     if (getcwd(abs_path, sizeof(abs_path)) != NULL) {
         // le chemin absolu a été récupéré avec succès, on peut concaténer avec le chemin relatif du dossier REF
         strcat(abs_path, "/");
@@ -49,13 +48,22 @@ char * getPathRef(){
 */
 
 void deleteRef(char* ref_name){
+    // On crée un tableau de caractères pour stocker le chemin de la référence à supprimer
     char ref[256];
+    // On utilise sprintf pour concaténer le chemin de la référence avec ".refs/" dans le tableau de caractères ref
     sprintf(ref, ".refs/%s", ref_name);
+    
+    // On vérifie si le fichier existe à l'emplacement donné par le chemin dans le tableau de caractères ref
     if(!file_exists(ref)){
+        // Si le fichier n'existe pas, on affiche un message d'erreur indiquant que la référence n'existe pas
         printf("La refernce %s n'existe pas\n", ref_name);
-    }else{
+    }
+    else{
+        // Si le fichier existe, on crée un tableau de caractères pour stocker la commande à exécuter pour supprimer le fichier
         char buff[256];
+        // On utilise sprintf pour créer la commande dans le tableau de caractères buff
         sprintf(buff, "rm .refs/%s", ref_name);
+        // On utilise la fonction system pour exécuter la commande stockée dans le tableau de caractères buff, ce qui supprime la référence
         system(buff);
     }
 }
@@ -72,7 +80,8 @@ char* getRef(char* ref_name) {
         printf("The reference %s does not exist using the function getRef\n",ref_name);
         return NULL;
         
-    }else{
+    }
+    else{
         // Construit le chemin du fichier de la référence
         char buff[256];
         sprintf(buff,".refs/%s",ref_name);
@@ -91,43 +100,41 @@ char* getRef(char* ref_name) {
     // Retourne le résultat
     return result;
 }
+
 void createFile(char *file) {
-    char buff[100];
-    sprintf(buff,"touch %s",file);
-    system(buff);
+    char buff[100]; // Déclare un tableau de caractères de 100 éléments appelé "buff"
+    sprintf(buff, "touch %s", file); // Stocke dans "buff" la commande shell "touch" avec le nom du fichier spécifié en paramètre
+    system(buff); // Exécute la commande shell stockée dans "buff" pour créer le fichier
 }
 
-/*
- Ajoute un fichier ou un dossier dans la zone de préparation (add)
- */
+
 void myGitAdd(char *file_or_folder) {
-    WorkTree *wt;
-    
+    WorkTree *wt; // initialisation d'un pointeur vers la structure WorkTree
+
     // Vérification de l'existence du fichier .add
     if (!file_exists(".add")) {
-        printf("creating .add\n");
-        createFile(".add");
-        wt = initWorkTree();
+        printf("creating .add\n"); // affichage d'un message indiquant la création de .add
+        createFile(".add"); // création du fichier .add
+        wt = initWorkTree(); // initialisation de la structure WorkTree
     }
     else {
-        wt = ftwt(".add");
+        wt = ftwt(".add"); // chargement de la structure WorkTree depuis le fichier .add
     }
-    
+
     // Vérification de l'existence du fichier ou dossier à ajouter
     if (file_exists(file_or_folder)) {
         // Ajout du fichier ou dossier à la zone de préparation
-        int res = appendWorkTree(wt, file_or_folder, NULL, 0);
+        int res = appendWorkTree(wt, file_or_folder, NULL, 0); // ajout de l'élément à la structure WorkTree
         if (res == -4) {
-            printf("file or folder already in .add\n");
-            return;
+            printf("file or folder already in .add\n"); // affichage d'un message indiquant que l'élément est déjà dans la zone de préparation
+            return; // retourne sans rien faire de plus
         }
-        wttf(wt, ".add");
+        wttf(wt, ".add"); // écriture de la structure WorkTree dans le fichier .add
     }
     else {
-        printf("file or folder %s does not exist\n", file_or_folder);
+        printf("file or folder %s does not exist\n", file_or_folder); // affichage d'un message indiquant que l'élément n'existe pas
     }
 }
-
 
 
 void myGitCommit(char* branch_name, char* message){
