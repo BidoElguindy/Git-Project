@@ -249,16 +249,6 @@ List* stol(char* s){
 }
 
 
-void afficherListe(List liste) {
-    Cell* actuel = liste;
-
-    while (actuel != NULL) {
-        printf("%s\n", actuel->data);
-        actuel = actuel->next;
-    }
-}
-
-
 void ltof(List* L, char* path) {
     // Ouverture du fichier pour l'écriture
     FILE* file = fopen(path, "w");
@@ -345,16 +335,11 @@ List* listdir(char* root_dir){ // Déclaration de la fonction listdir prenant en
     return L; // Retourne la liste contenant les noms des éléments du répertoire
 }
 
+struct stat st = {0}; //Crée une structure stat initialisée à zéro.
 
-int file_exists(char *file){            
-    List* L = listdir(".");            // Initialisation d'une liste chainée contenant les noms des fichiers et des répertoires du répertoire courant avec la fonction listdir()
-    Cell* c = searchList(L,file);      // Recherche de la cellule contenant le nom du fichier passé en paramètre avec la fonction searchList()
-    if(c!=NULL){                       // Vérifie que la cellule contenant le nom du fichier a été trouvée
-        freeList(L);
-        return 1;                      // Retourne 1 si le fichier existe
-    }
-    freeList(L);
-    return 0;                          // Retourne 0 si le fichier n'existe pas
+bool file_exists(char* file) { 
+    struct stat buffer; //Déclare une variable de type stat nommée buffer
+    return (stat(file, &buffer) == 0); //Utilise la fonction stat pour récupérer des informations sur le fichier spécifié par file, et renvoie true si stat renvoie zéro, ce qui indique que le fichier existe
 }
 
 
@@ -406,143 +391,29 @@ void blobFile(char* file) {
     
     free(hash);  // Libération de la mémoire allouée
     free(ch);
+    free(ch2);
+}
+
+
+void afficherListe(List liste) {
+    Cell* actuel = liste; // déclare un pointeur sur la tête de la liste et l'initialise à la tête de la liste
+
+    while (actuel != NULL) { // tant que le pointeur actuel ne pointe pas vers NULL
+        printf("%s\n", actuel->data); // affiche le contenu de la cellule pointée par le pointeur actuel
+        actuel = actuel->next; // met à jour le pointeur actuel pour qu'il pointe vers la cellule suivante dans la liste
+    }
 }
 
 void freeCell(Cell *c) {
-	if (c) {
-		freeCell(c->next);
-		free(c->data);
+	if (c) { // Si le pointeur est non-nul
+		freeCell(c->next); // Appelle récursivement la fonction freeCell sur la cellule suivante
+		free(c->data); // libère la mémoire allouée pour le champ data de la cellule actuelle
 	}
-	free(c);
+	free(c); // libère la mémoire allouée pour la cellule actuelle
 }
 
 void freeList(List *l) {
-	freeCell(*l);
-	free(l);
+	freeCell(*l); // Appelle la fonction freeCell pour libérer toutes les cellules de la liste
+	free(l); // libère la mémoire allouée pour le pointeur de liste
 }
 
-/*
-int main(){
-    
-    //EXERCICE 1  
-
-	// Nom du fichier à hasher
-    char* filename = "draft.txt";
-
-    // Calcul du hash du fichier
-    char* hash = sha256file(filename);
-    if (hash == NULL) {
-        printf("Erreur : impossible de calculer le hash du fichier %s\n", filename);
-        return 1;
-    }
-
-    // Affichage du hash
-    printf("Hash du fichier %s : %s\n", filename, hash);
-
-    // Libération de la mémoire allouée pour le hash
-    free(hash);
-    
-    //EXERCICE 2
-
-    // Création d'une nouvelle liste vide
-    List* L = initList();
-
-    // Création de deux nouvelles cellules pour la liste
-    Cell* C1 = buildCell("1");
-    Cell* C2 = buildCell("2");
-
-    // Insertion de la première cellule en tant que première cellule de la liste
-    insertFirst(L, C1);
-
-    // Insertion de la deuxième cellule en tant que première cellule de la liste
-    insertFirst(L, C2);
-
-    // Conversion de la liste en chaîne de caractères
-    char* s = ltos(L);
-
-    // Affichage de la chaîne de caractères
-    printf("La conversion de la liste en chaine de caracteres est %s\n", s);
-
-    // Recherche de la deuxième cellule de la liste
-    Cell* C3 = listGet(L, 2);
-
-    // Vérification que la cellule retournée est bien la deuxième cellule de la liste
-    assert(C3 == C1);
-
-    // Recherche d'une cellule qui n'existe pas dans la liste
-    Cell* C4 = searchList(L, "3");
-
-    // Vérification que la fonction de recherche renvoie NULL
-    assert(C4 == NULL);
-
-    // Recherche d'une cellule qui existe dans la liste
-    Cell* C5 = searchList(L, "1");
-
-    // Vérification que la cellule retournée est bien la deuxième cellule de la liste
-    assert(C5 == C1);
-
-    // Conversion d'une chaîne de caractères en liste
-    List* L2 = stol("3|4"); 
-    printf("La conversion de la chaine de caracteres en liste donne\t");
-    afficherListe(*L2);
-
-    // Vérification que la nouvelle liste contient les éléments attendus
-    assert(strcmp(ctos(*L2), "4") == 0);
-    assert(strcmp(ctos((*L2)->next), "3") == 0);
-
-    // Enregistrement de la liste dans un fichier
-    ltof(L, "test.txt");
-
-    // Lecture de la liste enregistrée dans le fichier
-    List* L3 = ftol("test.txt");
-
-    // Affichage de la liste lue à partir du fichier
-    printf("Liste lue du fichier:\n");
-    Cell* c = *L3;
-    while (c) {
-      printf("%s", c->data);
-      c = c->next;
-    }
-
-    // Libération de la mémoire allouée pour les listes et les cellules
-    free(s);
-    free(C1);
-    free(C2);
-    free(L);
-    free(L2);
-    free(L3);
-
-    //EXERCICE 3
-
-    List* L4 = listdir(".");                     // Test de la fonction listdir()
-    printf("Liste des fichiers et répertoires du répertoire courant :\n");
-    afficherListe(*L4);;                         // Affichage de la liste des fichiers et répertoires du répertoire courant
-    
-    char* file = "test.txt";
-    int res = file_exists(file);                 // Test de la fonction file_exists()
-    if(res == 1){
-        printf("Le fichier %s existe\n", file);
-    }
-    else{
-        printf("Le fichier %s n'existe pas\n", file);
-    }
-    
-    char* from = "test.txt";
-    char* to = "test_copy.txt";
-    cp(to,from);                                // Test de la fonction cp()
-    printf("Le fichier %s a été copié dans %s\n", from, to);
-    
-    char* hash2 = "aabbccddeeff";
-    char* path = hashToPath(hash2);             // Test de la fonction hashToPath()
-    printf("Le chemin vers le fichier correspondant au hash %s est %s\n", hash2, path);
-    
-    char* file2 = "test_copy.txt";
-    blobFile(file2);                            // Test de la fonction blobFile()
-    
-    free(path);                                 // Libération de la mémoire allouée
-    free(L4);
-
-    return 0;
-}
-
-*/
