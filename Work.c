@@ -126,7 +126,7 @@ WorkTree* stwt(char* str) {
 int wttf(WorkTree* wt, char* file) {
     
     // ouverture du fichier en mode écriture
-    FILE* fp = fopen(file, "w");
+    FILE* fp = fopen(file, "a");
     
     // gestion d'erreur en cas de fichier non ouvert
     if (fp == NULL) {
@@ -146,34 +146,31 @@ int wttf(WorkTree* wt, char* file) {
 
     return 0;
 }
-
-
-WorkTree* ftwt(char* file) {
-    // Ouvrir le fichier en mode lecture
-    FILE* fp = fopen(file, "r");
-    if (fp == NULL) {
-        // En cas d'erreur lors de l'ouverture du fichier
-        fprintf(stderr, "Erreur: impossible d'ouvrir le fichier %s\n", file);
-        return NULL;
-    }
-    // Initialiser les variables pour la lecture de la chaîne de caractères représentant le WorkTree
-    char* str = NULL;
-    size_t size = 0;
-    ssize_t bytes_read = 0;
-    // Lire le fichier et stocker la chaîne de caractères dans 'str'
-    while ((bytes_read = getline(&str, &size, fp)) != -1) {}
-
-    // Fermer le fichier
-    fclose(fp);
-
-    // Construire le WorkTree à partir de la chaîne de caractères 'str'
-    WorkTree* wt = stwt(str);
-
-    // Libérer la mémoire allouée pour la chaîne de caractères 'str'
-    free(str);
-    return wt;
+WorkTree* ftwt(char *file) {
+	// On ouvre le fichier en mode lecture.
+	FILE *f = fopen(file,"r");
+	// Si l'ouverture a échoué, on affiche un message d'erreur et on retourne NULL.
+	if (f==NULL) {
+		printf("erreur lors de l'ouverture du fichier : %s\n",file);	
+		return NULL;
+	}
+	// On crée un buffer pour stocker les lignes du fichier.
+	char buffer[256];
+	// On alloue de la mémoire pour stocker l'arborescence au format string.
+	char* strtree = (char*) malloc(1000*sizeof(char));
+	while (fgets(buffer,256,f)) {
+		// On ajoute chaque ligne lue au buffer.
+		strcat(strtree,buffer);
+	}
+	// On ferme le fichier.
+	fclose(f);
+	// On convertit le string contenant l'arborescence en un WorkTree.
+	WorkTree *wt = stwt(strtree);
+	// On libère la mémoire allouée pour le string.
+	free(strtree);
+	// On retourne le pointeur vers le WorkTree.
+	return wt;
 }
-
 
 //EXERCICE 5
 
