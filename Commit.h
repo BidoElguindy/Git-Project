@@ -1,9 +1,12 @@
-#ifndef Commit_h
-#define Commit_h
+#ifndef commit_h
+#define commit_h
 
 #include "Work.h"
 
-#define COMMIT_SIZE 100
+#define COMMIT_SIZE 10
+#define KVTS_SIZE 100
+
+typedef long unsigned int szt;
 
 typedef struct key_value_pair {
     char* key;
@@ -37,8 +40,10 @@ kvp* stkv(char* str);
 Commit de taille fixee (donnee par une constante du programme)*/
 Commit* initCommit();
 
-/* Q.4 La fonction hashF est la fonction de hachage */
-unsigned long hashF(char * str);
+/* Q.4 La fonction hashF est une fonction de hachage qui utilise l'algorithme SDBM 
+(« Simple Database Manager ») pour calculer la valeur de hachage d'une chaîne de 
+caractères str */
+static unsigned long hashF(char *str);
 
 /* Q.5 La fonction commitSet insere la paire (key, value) dans la table
 en gerant les collisions par adressage ouvert et probing lineaire */
@@ -78,11 +83,15 @@ Commit* ftc(char* file);
 en passant par un fichier temporaire. Elle retourne le hash du fichier temporaire   */
 char* blobCommit(Commit* c);
 
+/* Fonctions supplémentaires */
+
 //Libère Commit
 void freeCommit(Commit *c);
 
-// Retourne le WorkTree correspondant à la dernière version de la branche donnée en paramètre.
-WorkTree* btwt(const char* branch);
+//Afficher Commit pour le debogage 
+void printCommit(Commit* c);
 
+//Supprime du commit la pair cle valeur dont la valeur est passee en parametre 
+void commitDeleteValue(Commit* c, char* value);
 
 #endif
