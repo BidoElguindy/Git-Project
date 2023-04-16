@@ -9,7 +9,7 @@
 
 void manuel() {
 	printf("fonctions :\n");
-	printf("\tinit : initialise le .refs\n");
+	printf("\tinit : initialise le .refs et la branche courante\n");
 	printf("\tlist-refs : liste les références existantes\n");
 	printf("\tlist-add : liste les éléments présents dans le .add\n");
 	printf("\tclear-add : réinitialise le .add\n");
