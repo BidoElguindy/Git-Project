@@ -206,6 +206,7 @@ char* hashToFile(char* hash) {
     if (stat(ch2, &st) == -1) {
         mkdir(ch2, 0700);
     }
+    free(ch2);
     // Retourner le chemin complet du répertoire hash
     return hashToPath(hash);
 }
@@ -224,6 +225,7 @@ char * blobWorkTree(WorkTree* wt) {
     // Copier le fichier temporaire vers le fichier représentant l'état instantané
     // du WorkTree (avec l'extension ".t")
     cp(ch, fname);
+    free(ch);
     // Retourner le hash du fichier temporaire
     return hash;
 }
@@ -248,10 +250,11 @@ char *concat_paths(char *path1, char *path2) {
 }
 
 int isFile(const char *path) {
-    struct stat path_stat;
-    stat(path, &path_stat);
-    return S_ISREG(path_stat.st_mode);
+    struct stat path_stat; // déclare une structure pour stocker les informations sur le fichier
+    stat(path, &path_stat); // appelle la fonction stat() pour récupérer les informations sur le fichier et les stocker dans la structure
+    return S_ISREG(path_stat.st_mode); // vérifie si le fichier est un fichier régulier en utilisant la macro S_ISREG() sur le champ st_mode de la structure path_stat, puis retourne 1 si c'est le cas et 0 sinon
 }
+
 
 char* saveWorkTree(WorkTree* wt, char* path) {
     // Affichage du chemin du WorkTree en cours de sauvegarde
@@ -320,7 +323,8 @@ char* saveWorkTree(WorkTree* wt, char* path) {
 void freeWorkTree(WorkTree *wt) {
     if (wt != NULL){ // Vérification que le pointeur n'est pas NULL
         for (int i=0;i<wt->n;i++) { // Itération sur tous les fichiers de l'arbre de travail
-            freeWorkFile(&wt->tab[i]); // Libération de la mémoire du fichier courant
+            free(wt->tab[i].name);
+            free(wt->tab[i].hash); // Libération de la mémoire du fichier courant
         }
         free(wt->tab); // Libération de la mémoire du tableau de fichiers
         free(wt); // Libération de la mémoire de l'arbre de travail
@@ -330,7 +334,7 @@ void freeWorkTree(WorkTree *wt) {
 void freeWorkFile(WorkFile *wf) {
     if (wf != NULL){ // Vérification que le pointeur n'est pas NULL
 	    free(wf->name); // Libération de la mémoire de la chaîne de caractères représentant le nom du fichier
-	    free(wf->hash); // Libération de la mémoire de la chaîne de caractères représentant le hash du contenu du fichier
+        free(wf->hash); // Libération de la mémoire de la chaîne de caractères représentant le hash du contenu du fichier
 	    free(wf); // Libération de la mémoire du fichier
     }
 }
@@ -393,135 +397,3 @@ void restoreWorkTree(WorkTree* wt, char* path) {
     }
 }
 
-
-/*
-int main(){
-    
-    //EXERCICE 4 
-
-    printf("\n");
-    printf("Test Exercice 4 \n");
-    printf("\n");
-
-    WorkFile* wf1 = createWorkFile("file1");
-    WorkFile* wf2 = createWorkFile("file2");
-
-    char* wfts1 = wfts(wf1);
-    printf("WorkFile 1 : %s\n", wfts1);
-    char* wfts2 = wfts(wf2);
-    printf("WorkFile 2 : %s\n", wfts2);
-
-    WorkFile* wf3 = stwf("file3 123456 777");
-    if (wf3 != NULL) {
-        char* wfts3 = wfts(wf3);
-        printf("WorkFile 3 : %s\n", wfts3);
-    }
-
-    WorkTree* wt = initWorkTree();
-    int ret = appendWorkTree(wt, "file1", NULL, 1);
-    if (ret == 0) {
-        printf("WorkFile 1 ajouté dans WorkTree\n");
-    }
-    else {
-        printf("Erreur lors de l'ajout de WorkFile 1 dans WorkTree\n");
-    }
-
-    ret = appendWorkTree(wt, "file2", "123456", 2);
-    if (ret == 0) {
-        printf("WorkFile 2 ajouté dans WorkTree\n");
-    }
-    else {
-        printf("Erreur lors de l'ajout de WorkFile 2 dans WorkTree\n");
-    }
-
-    ret = appendWorkTree(wt, "file1", "456789", 3);
-    if (ret == 0) {
-        printf("WorkFile 1 mis à jour dans WorkTree\n");
-    }
-    else {
-        printf("Erreur lors de la mise à jour de WorkFile 1 dans WorkTree\n");
-    }
-
-    int index = inWorkTree(wt, "file2");
-    if (index != -1) {
-        printf("WorkFile 2 trouvé dans WorkTree à l'indice %d\n", index);
-    }
-    else {
-        printf("WorkFile 2 non trouvé dans WorkTree\n");
-    }
-
-    char* wtts1 = wtts(wt);
-    printf("WorkTree : %s\n", wtts1);
-
-    free(wf1);
-    free(wf2);
-    free(wf3);
-    free(wfts1);
-    free(wfts2);
-    free(wtts1);
-    free(wt->tab);
-    free(wt);
-    
-
-    //EXERCICE 5 
-
-    printf("\n");
-    printf("Test Exercice 5 \n");
-    printf("\n");
-
-    // Test de la fonction getChmod
-    printf("getChmod: %d\n", getChmod("test.txt"));
-
-    // Test de la fonction setMode
-    setMode(0644, "test.txt");
-
-    // Test de la fonction hashToFile
-    char* pathh = hashToFile("abcd1234");
-    printf("hashToFile: %s\n", pathh);
-
-    // Test de la fonction blobWorkTree
-    WorkTree* wtt = initWorkTree();
-    appendWorkTree(wtt, "testdir", NULL, 0);
-    char* hashh = blobWorkTree(wtt);
-    printf("blobWorkTree: %s\n", hashh);
-
-    // Test de la fonction concat_paths
-    char* result = concat_paths("/path/to/dir", "test.txt");
-    printf("concat_paths: %s\n", result);
-    free(result);
-
-    // Test de la fonction isFile
-    printf("isFile: %d\n", isFile("test.txt"));
-     
-    // Test de la fonction saveWorkTree
-
-    //Création d'un WorkTree vide
-    WorkTree *wt = initWorkTree();
-
-    // Ajout d'un fichier à ce WorkTree
-    appendWorkTree(wt, "test.txt", NULL, 0);
-
-    // Ajout d'un répertoire à ce WorkTree
-    appendWorkTree(wt, "d4", NULL, 1);
-    
-    // Sauvegarde du WorkTree dans un répertoire temporaire
-    char *hash = saveWorkTree(wt, ".");
-    
-    // Vérification que le hash retourné n'est pas NULL
-    if (hash == NULL) {
-        printf("Erreur lors de la sauvegarde du WorkTree\n");
-        return 1;
-    }
-    
-    // Affichage du hash retourné
-    printf("Le hash du WorkTree est : %s\n", hash);
-    
-    // Libération de la mémoire allouée pour le WorkTree et le hash
-    free(wt->tab);
-    free(wt);
-    free(hash);
-    
-    return 1;
-}
-
-*/
