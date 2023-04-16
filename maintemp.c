@@ -25,6 +25,7 @@ int main(){
     // Libération de la mémoire allouée pour le hash
     free(hash);
    
+   
     //EXERCICE 2
 
     printf("\n");
@@ -132,7 +133,7 @@ int main(){
     free(path);                                 // Libération de la mémoire allouée
     freeList(L4);
     
-    
+     
     //EXERCICE 4 
 
     printf("\n");
@@ -146,13 +147,14 @@ int main(){
     printf("WorkFile 1 : %s\n", wfts1);
     char* wfts2 = wfts(wf2);
     printf("WorkFile 2 : %s\n", wfts2);
-   
+    
     WorkFile* wf3 = stwf("file3 123456 777");
     if (wf3 != NULL) {
         char* wfts3 = wfts(wf3);
         printf("WorkFile 3 : %s\n", wfts3);
+        free(wfts3);
     }
-
+    
     WorkTree* wt = initWorkTree();
     int ret = appendWorkTree(wt, "file1", NULL, 1);
     if (ret == 0) {
@@ -177,7 +179,7 @@ int main(){
     else {
         printf("Erreur lors de la mise à jour de WorkFile 1 dans WorkTree\n");
     }
-
+    
     int index = inWorkTree(wt, "file2");
     if (index != -1) {
         printf("WorkFile 2 trouvé dans WorkTree à l'indice %d\n", index);
@@ -189,15 +191,14 @@ int main(){
     char* wtts1 = wtts(wt);
     printf("WorkTree : %s\n", wtts1);
     
-    free(wf1);
-    free(wf2);
-    free(wf3);
+    freeWorkFile(wf1);
+    freeWorkFile(wf2);
+    freeWorkFile(wf3);
     free(wfts1);
     free(wfts2);
     free(wtts1);
-    free(wt->tab);
-    free(wt);
-    
+    freeWorkTree(wt);
+   
     
     //EXERCICE 5 
 
@@ -210,25 +211,30 @@ int main(){
 
     // Test de la fonction setMode
     setMode(0644, "test.txt");
-
+    
     // Test de la fonction hashToFile
     char* pathh = hashToFile("abcd1234");
     printf("hashToFile: %s\n", pathh);
-
+    
     // Test de la fonction blobWorkTree
     WorkTree* wtt = initWorkTree();
-    appendWorkTree(wtt, "testdir", NULL, 0);
+    int ret2 = appendWorkTree(wtt, "testdir", "142536", 2);
+    if (ret2 == 0) {
+        printf("WorkFile ajouté dans WorkTree\n");
+    }
+    else {
+        printf("Erreur lors de l'ajout du WorkFile dans WorkTree\n");
+    }
     char* hashh = blobWorkTree(wtt);
     printf("blobWorkTree: %s\n", hashh);
-
+    
     // Test de la fonction concat_paths
     char* result = concat_paths("/path/to/dir", "test.txt");
     printf("concat_paths: %s\n", result);
-    free(result);
 
     // Test de la fonction isFile
     printf("isFile: %d\n", isFile("test.txt"));
-     
+    
     // Test de la fonction saveWorkTree
 
     //Création d'un WorkTree vide
@@ -251,25 +257,33 @@ int main(){
     
     // Affichage du hash retourné
     printf("Le hash du WorkTree est : %s\n", hashhh);
+
+    // Restaure le WorkTree à partir de la sauvegarde
+    WorkTree* restored = ftwt(".");
+    restoreWorkTree(restored, "./restored");
     
-    // Libération de la mémoire allouée pour le WorkTree et le hash
-    free(Wt -> tab); //Fuite ??
-    free(Wt);
+    // Libération de la mémoire allouée 
+    free(pathh);
+    freeWorkTree(wtt);
+    free(hashh);
+    free(result);
     free(hashhh);
-    
+    freeWorkTree(Wt);
+    freeWorkTree(restored);
+
     
     //Exercice 6 
-
+    
     printf("\n");
     printf("Test Exercice 6 \n");
     printf("\n");
     
-     // Test createKeyVal et freeKeyVal
+    // Test createKeyVal et freeKeyVal
     printf("Testing createKeyVal and freeKeyVal \n");
     kvp* kv = createKeyVal("key", "value");
     printf("Key: %s, Value: %s\n", kv->key, kv->value);
-    free(kv);
-
+    freeKeyVal(kv);
+    
     // Test kvts et stkv
     printf("Testing kvts and stkv\n");
     char* kv_string = "key: value\n";
@@ -277,53 +291,64 @@ int main(){
     printf("Key: %s, Value: %s\n", kv2->key, kv2->value);
     char* kv_string2 = kvts(kv2);
     printf("String: %s\n", kv_string2);
-    free(kv2);
+    freeKeyVal(kv2);
     free(kv_string2);
-
+    
     // Test initCommit et commitSet
     printf("Testing initCommit and commitSet\n");
     Commit* C = initCommit();
     commitSet(C, "key1", "value1");
     commitSet(C, "key2", "value2");
+    
+    //printCommit(C); pour le debogage 
     printf("Value for key1: %s\n", commitGet(C, "key1"));
     printf("Value for key2: %s\n", commitGet(C, "key2"));
-
+    
     // Test createCommit
     printf("Testing createCommit\n");
     Commit* c2 = createCommit("hash123");
     commitSet(c2, "key3", "value3");
+    printCommit(c2);
+
     char* commit_string = cts(c2);
     printf("Commit string: %s\n", commit_string);
-
+    
     // Test commitGet
     printf("Testing commitGet\n");
-    char* value = commitGet(c2, "key3");
-    printf("Value for key3: %s\n", value);
-    free(value);
-
+    char * k = commitGet(c2, "key3");
+    printf("Value for key3: %s\n", k);
+    k = NULL;
+    
     // Test stc
     printf("Testing stc\n");
     Commit* c3 = stc(commit_string);
     printf("Value for key3: %s\n", commitGet(c3, "key3"));
-    free(commit_string);
-
+    
     // Test ctf et ftc
     printf("Testing ctf and ftc\n");
     ctf(c3, "test_commit.txt");
     Commit* c4 = ftc("test_commit.txt");
     printf("Value for key3: %s\n", commitGet(c4, "key3"));
-
+    
     // Test blobCommit
     printf("Testing blobCommit\n");
     char* H = blobCommit(c2);
     printf("Blob hash: %s\n", H);
     free(H);
-
+    
     // Libération de la mémoire
+    commitDeleteValue(C, "value1");
+    commitDeleteValue(C, "value2");
     freeCommit(C);
+    commitDeleteValue(c2, "hash123");
+    commitDeleteValue(c2, "value3");
     freeCommit(c2);
+    free(commit_string);
+    commitDeleteValue(c3, "value3");
     freeCommit(c3);
+    commitDeleteValue(c4, "value3");
     freeCommit(c4);
-     
+    
+
     return 0;
 }
