@@ -117,7 +117,7 @@ void myGitAdd(char *file_or_folder) {
     if (file_exists(file_or_folder)) {
         // Ajout du fichier ou dossier à la zone de préparation
         int res = appendWorkTree(wt, file_or_folder, NULL, 0);
-        if (res == 0) {
+        if (res == -4) {
             printf("file or folder already in .add\n");
             return;
         }
