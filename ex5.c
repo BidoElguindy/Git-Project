@@ -59,6 +59,7 @@ void blobWorkTree(WorkTree* wt) {
     // Copier le fichier temporaire vers le fichier représentant l'état instantané
     // du WorkTree (avec l'extension ".t")
     cp(ch, fname);
+    free(h)
 
     // Retourner le hash du fichier temporaire
     return hash;
